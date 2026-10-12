@@ -108,3 +108,15 @@ def test_erreur_de_la_plateforme_transmise_clairement(session: Session, settings
     started = start_oauth(session, "youtube", settings)
     with pytest.raises(AccountError, match="invalid_grant"):
         complete_oauth(session, platform="youtube", code="c", state=started["state"], settings=settings)
+
+
+def test_api_ne_renvoie_jamais_le_jeton(session: Session, settings, patched_connector, client):
+    """Le schéma de sortie ne doit exposer aucun identifiant, même après connexion."""
+    started = start_oauth(session, "youtube", settings)
+    complete_oauth(session, platform="youtube", code="le-code", state=started["state"], settings=settings)
+    session.commit()
+    accounts = client.get("/api/accounts").json()
+    payload = str(accounts)
+    assert "ya29.accesstoken123456" not in payload
+    assert "1//refreshtoken" not in payload
+    assert "credential_blob" not in payload

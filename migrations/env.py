@@ -35,6 +35,16 @@ target_metadata = Base.metadata
 
 
 def _database_url() -> str:
+    """Base cible des migrations.
+
+    Priorité : ``sqlalchemy.url`` explicite (``alembic -c ... upgrade head`` ou
+    ``config.set_main_option``), sinon la configuration de l'application.
+    Sans cette priorité, un test ou un déploiement ciblant une autre base
+    écrirait silencieusement dans le répertoire de données par défaut.
+    """
+    override = (config.get_main_option("sqlalchemy.url") or "").strip()
+    if override.startswith(("sqlite://", "postgresql://", "postgresql+psycopg://", "mysql://")):
+        return override
     return get_settings().resolved_database_url
 
 

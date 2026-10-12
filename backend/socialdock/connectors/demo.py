@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import hashlib
 import time
+from dataclasses import replace
 from typing import Any
 
 from ..models import Account
@@ -23,10 +24,36 @@ SCENARIOS = ("success", "failure", "uncertain", "published_private", "waiting_fo
 
 
 class DemoConnector(SocialConnector):
+    """Connecteur local déterministe.
+
+    Il peut être instancié avec la plateforme sous-jacente du compte : la matrice
+    de capacités affichée reste alors celle de la vraie plateforme (limitations
+    d'audit, quotas, formats), avec une mention explicite du mode démonstration.
+    """
+
     platform = "demo"
     label = "Démonstration locale"
 
+    def __init__(self, client=None, *, platform: str | None = None, settings=None, timeout: float = 60.0) -> None:
+        super().__init__(client=client, timeout=timeout)
+        self._underlying = None
+        if platform and platform in ("youtube", "instagram", "tiktok"):
+            from .registry import build_connector  # import local : évite l'import circulaire
+
+            self._underlying = build_connector(platform, settings, client=client)
+
     def get_capabilities(self, account: Account | None = None) -> Capabilities:
+        if self._underlying is not None:
+            capabilities = self._underlying.get_capabilities(account)
+            return replace(
+                capabilities,
+                auth_available=False,
+                restrictions=[
+                    "Compte en mode démonstration : rien n'est publié sur la plateforme réelle.",
+                    "Les statistiques affichées sont générées localement et ne reflètent aucune audience réelle.",
+                ]
+                + list(capabilities.restrictions),
+            )
         return Capabilities(
             platform=self.platform,
             label=self.label,

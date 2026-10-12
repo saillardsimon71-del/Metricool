@@ -50,10 +50,19 @@ def collect_for_target(session: Session, target: PostTarget, *, settings: Settin
     settings = settings or get_settings()
     if target.status not in {PostStatus.PUBLISHED.value, PostStatus.PUBLISHED_PRIVATE.value}:
         return None
+    if not target.remote_id:
+        # Sans identifiant distant, aucune métrique de publication n'est
+        # récupérable : on ne stocke rien plutôt que d'inventer.
+        log.info("Statistiques ignorées pour %s : aucun identifiant distant", target.id)
+        return None
     account = target.account
+    credential = credential_for(account, settings)
+    if account.mode == "real" and not credential.get("access_token"):
+        # Compte réel non connecté : aucune donnée, aucun appel réseau inutile.
+        log.info("Statistiques ignorées pour %s : compte non connecté", account.id)
+        return None
     connector = connector_for_account(account, settings)
     try:
-        credential = credential_for(account, settings)
         from ..connectors.base import PublishContext
 
         context = PublishContext(target=target, post=target.post, account=account, credential=credential)

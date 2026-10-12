@@ -28,7 +28,7 @@ from sqlalchemy.orm import Session
 from ..config import Settings, get_settings
 from ..database import get_session_factory
 from ..logging_setup import log_event
-from ..models import EventLog, LogLevel, PostStatus, PostTarget, utcnow
+from ..models import EventLog, LogLevel, PostStatus, PostTarget, as_utc, utcnow
 from .publisher import acquire_lock, publish_target, release_lock
 from .states import can_transition, set_status
 
@@ -175,7 +175,7 @@ class SchedulerEngine:
             stale = session.scalars(
                 select(PostTarget).where(
                     PostTarget.locked_by.is_not(None),
-                    or_(PostTarget.lock_expires_at.is_(None), PostTarget.lock_expires_at < now),
+                    or_(PostTarget.lock_expires_at.is_(None), PostTarget.lock_expires_at < now.replace(tzinfo=None)),
                 )
             ).all()
             for target in stale:
@@ -306,7 +306,7 @@ class SchedulerEngine:
             {
                 "post_target_id": t.id,
                 "scheduled_at": t.scheduled_at.isoformat() if t.scheduled_at else None,
-                "late_seconds": int((now - t.scheduled_at).total_seconds()) if t.scheduled_at else None,
+                "late_seconds": int((now - as_utc(t.scheduled_at)).total_seconds()) if t.scheduled_at else None,
                 "account": t.account.display_name if t.account else None,
             }
             for t in rows

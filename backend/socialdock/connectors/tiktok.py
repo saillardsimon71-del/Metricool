@@ -81,7 +81,7 @@ class TikTokConnector(SocialConnector):
 
     # -- capacités ---------------------------------------------------------
     def get_capabilities(self, account: Account | None = None) -> Capabilities:
-        audited = bool(account and account.extra.get("audit_passed"))
+        audited = bool(account and (account.extra or {}).get("audit_passed"))
         restrictions = []
         if not audited:
             restrictions.append(
@@ -254,13 +254,21 @@ class TikTokConnector(SocialConnector):
 
     @staticmethod
     def _chunk_plan(size: int) -> int:
-        """Taille de morceau conforme (5–64 Mo, ≤ 1000 morceaux, fichier < 5 Mo en un bloc)."""
+        """Taille de morceau conforme (5–64 Mo, ≤ 1000 morceaux, fichier < 5 Mo en un bloc).
+
+        Au-delà de 1000 morceaux de 64 Mo (~64 Go), le protocole FILE_UPLOAD ne
+        peut plus respecter les règles TikTok : on refuse explicitement plutôt
+        que d'envoyer un plan invalide.
+        """
         if size <= MIN_CHUNK:
             return size
-        chunk = MAX_CHUNK
-        while size / chunk > MAX_CHUNKS and chunk < 128 * 1024 * 1024:
-            chunk *= 2
-        return min(chunk, MAX_CHUNK)
+        if size > MAX_CHUNK * MAX_CHUNKS:
+            raise PermanentError(
+                f"Fichier de {size / 1_000_000_000:.1f} Go trop volumineux pour FILE_UPLOAD "
+                f"(maximum {MAX_CHUNK * MAX_CHUNKS / 1_000_000_000:.0f} Go en {MAX_CHUNKS} morceaux de 64 Mo).",
+                code="tiktok_file_too_large",
+            )
+        return MAX_CHUNK
 
     def _init_post(self, context: PublishContext, body: dict[str, Any], inbox: bool) -> dict[str, Any]:
         url = INBOX_POST_URL if inbox else DIRECT_POST_URL

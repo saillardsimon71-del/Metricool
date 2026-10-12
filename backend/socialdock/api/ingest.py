@@ -26,7 +26,13 @@ router = APIRouter(prefix="/api/ingest", tags=["ingest"])
 
 
 def _allowed_roots(session: Session, settings: Settings) -> list[Path]:
-    roots = [settings.data_dir.resolve(), Path.home().resolve()]
+    """Périmètre d'ingestion : dossiers surveillés + répertoire de données.
+
+    Le répertoire personnel complet n'est **pas** autorisé : une fuite de token
+    ne doit pas permettre de copier n'importe quel fichier de la machine dans la
+    bibliothèque médias.
+    """
+    roots = [settings.data_dir.resolve()]
     for folder in session.scalars(select(WatchedFolder)).all():
         try:
             roots.append(Path(folder.path).expanduser().resolve())

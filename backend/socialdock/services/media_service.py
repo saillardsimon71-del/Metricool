@@ -100,6 +100,7 @@ def import_path(
     move: bool = False,
     imported_from: str | None = None,
     generate_thumbnail: bool = True,
+    original_name: str | None = None,
     settings: Settings | None = None,
 ) -> ImportResult:
     """Importe un fichier local dans la bibliothèque (copie par défaut)."""
@@ -135,7 +136,7 @@ def import_path(
     probe = probe_file(destination)
     asset = MediaAsset(
         stored_path=stored_name,
-        original_name=source_path.name,
+        original_name=original_name or source_path.name,
         display_name=display_name or _safe_stem(source_path.name),
         kind=probe.kind,
         mime_type=probe.mime_type,
@@ -194,6 +195,7 @@ def import_bytes(
             display_name=display_name,
             tags=tags,
             imported_from=imported_from or f"upload:{filename}",
+            original_name=filename,
             settings=settings,
         )
     finally:
@@ -252,7 +254,8 @@ def list_assets(
         "size_desc": MediaAsset.size_bytes.desc(),
         "duration_desc": MediaAsset.duration_seconds.desc(),
     }.get(sort, MediaAsset.created_at.desc())
-    total = session.scalar(select(func.count()).select_from(MediaAsset)) or 0
+    # Le total doit refléter les filtres appliqués, pas la table entière.
+    total = session.scalar(select(func.count()).select_from(stmt.subquery())) or 0
     rows = session.scalars(stmt.order_by(order).limit(limit).offset(offset)).all()
     return list(rows), int(total)
 

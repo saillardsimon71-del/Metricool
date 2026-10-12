@@ -33,6 +33,7 @@ from ..models import (
     PostStatus,
     PostTarget,
     PublishAttempt,
+    as_utc,
     utcnow,
 )
 from ..security import SecretVault, redact
@@ -81,7 +82,8 @@ def _needs_refresh(credential: dict[str, Any]) -> bool:
 def acquire_lock(session: Session, target: PostTarget, owner: str, *, minutes: int = LOCK_MINUTES) -> bool:
     """Verrou conditionnel : échoue si un autre worker tient déjà la cible."""
     now = utcnow()
-    if target.locked_by and target.lock_expires_at and target.lock_expires_at > now:
+    expires = as_utc(target.lock_expires_at)
+    if target.locked_by and expires is not None and expires > now:
         return False
     target.locked_by = owner
     target.locked_at = now
@@ -157,6 +159,17 @@ def publish_target(
         # Règle 1 : idempotence — on vérifie, on ne republie pas.
         log.info("Cible %s déjà publiée (remote_id=%s) : vérification du statut", target.id, target.remote_id)
         return refresh_remote_status(session, target, settings=settings, connector=connector)
+
+    if target.status == PostStatus.UNCERTAIN.value:
+        # Règle 2 : une issue ambiguë exige une décision humaine. Aucune relance
+        # automatique, même si le scheduler retombe sur cette cible.
+        target.requires_user_action = True
+        target.user_action_hint = target.user_action_hint or (
+            "Statut incertain : vérifiez la plateforme puis tranchez (publiée / échouée / relancer)."
+        )
+        session.commit()
+        log.warning("Cible %s en statut incertain : republication automatique refusée", target.id)
+        return target
 
     connector = connector or connector_for_account(account, settings)
     capabilities = connector.get_capabilities(account)

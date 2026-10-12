@@ -37,6 +37,20 @@ def new_id() -> str:
     return uuid.uuid4().hex
 
 
+def as_utc(value: datetime | None) -> datetime | None:
+    """Normalise une date lue depuis SQLite.
+
+    SQLite ne conserve pas le fuseau : SQLAlchemy renvoie des ``datetime``
+    naïfs. Toute comparaison Python avec ``utcnow()`` échouerait sans cette
+    normalisation (erreur ``offset-naive vs offset-aware``).
+    """
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value
+
+
 class Base(DeclarativeBase):
     type_annotation_map = {dict[str, Any]: JSON, list[Any]: JSON}
 

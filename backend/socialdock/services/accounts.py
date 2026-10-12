@@ -15,7 +15,7 @@ from ..config import Settings, get_settings
 from ..connectors.base import PermanentError, SocialConnector
 from ..connectors.registry import connector_for_account
 from ..logging_setup import log_event
-from ..models import Account, AccountGroup, AccountStatus, OAuthState, Platform, utcnow
+from ..models import Account, AccountGroup, AccountStatus, OAuthState, Platform, as_utc, utcnow
 from ..security import SecretVault
 from .publisher import credential_for, store_credential
 
@@ -142,7 +142,7 @@ def complete_oauth(
         raise AccountError("État OAuth inconnu : relancez la connexion (possible tentative de CSRF).")
     if entry.consumed:
         raise AccountError("Cet état OAuth a déjà été utilisé.")
-    if entry.expires_at and entry.expires_at < utcnow():
+    if as_utc(entry.expires_at) and as_utc(entry.expires_at) < utcnow():
         raise AccountError("La session d'autorisation a expiré : relancez la connexion.")
     connector = connector_for_account(
         session.get(Account, entry.account_id) if entry.account_id else Account(platform=platform, display_name=platform),

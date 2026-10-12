@@ -83,7 +83,7 @@ class YouTubeConnector(SocialConnector):
 
     # -- capacités ---------------------------------------------------------
     def get_capabilities(self, account: Account | None = None) -> Capabilities:
-        audited = bool(account and account.extra.get("audit_passed"))
+        audited = bool(account and (account.extra or {}).get("audit_passed"))
         restrictions = [] if audited else [UNAUDITED_NOTICE]
         restrictions.append("100 appels videos.insert par projet et par jour (quota par défaut).")
         restrictions.append("Programmation native disponible uniquement avec privacyStatus=private.")

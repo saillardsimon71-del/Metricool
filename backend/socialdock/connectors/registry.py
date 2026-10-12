@@ -55,7 +55,7 @@ def connector_for_account(account: Account, settings: Settings | None = None, *,
     """Un compte ``demo`` utilise toujours le connecteur local, même si des
     identifiants API sont configurés — aucune ambiguïté possible."""
     if account.mode == "demo":
-        return DemoConnector(client=client)
+        return DemoConnector(client=client, platform=account.platform, settings=settings)
     return build_connector(account.platform, settings, client=client)
 
 

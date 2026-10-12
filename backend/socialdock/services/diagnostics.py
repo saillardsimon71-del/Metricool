@@ -7,7 +7,7 @@ import platform as pyplatform
 import shutil
 import sqlite3
 import sys
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
 from typing import Any
 
 from sqlalchemy import select, text

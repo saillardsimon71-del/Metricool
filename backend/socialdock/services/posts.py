@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import logging
-from datetime import date, datetime, time as dtime, timedelta, timezone
-from typing import Any, Iterable, Sequence
+from collections.abc import Iterable, Sequence
+from datetime import UTC, date, datetime, timedelta
+from datetime import time as dtime
+from typing import Any
 
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from ..logging_setup import log_event
@@ -36,7 +38,7 @@ def ensure_utc(value: datetime | str | None) -> datetime | None:
         value = datetime.fromisoformat(value.replace("Z", "+00:00"))
     if value.tzinfo is None:
         raise PostError("Un horaire sans fuseau horaire est refusé : fournissez un instant UTC ou offset.")
-    return value.astimezone(timezone.utc)
+    return value.astimezone(UTC)
 
 
 def create_post(
@@ -283,7 +285,7 @@ def list_targets(
 
 def dashboard_summary(session: Session) -> dict[str, Any]:
     now = utcnow()
-    today_start = datetime.combine(now.date(), dtime.min, tzinfo=timezone.utc)
+    today_start = datetime.combine(now.date(), dtime.min, tzinfo=UTC)
     today_end = today_start + timedelta(days=1)
 
     def count_targets(**filters: Any) -> int:
@@ -381,7 +383,7 @@ def batch_schedule(
     slots: list[datetime] = []
     for day in days:
         for hour in times:
-            slots.append(datetime.combine(day, hour, tzinfo=timezone.utc))
+            slots.append(datetime.combine(day, hour, tzinfo=UTC))
     if stagger_minutes:
         adjusted: list[datetime] = []
         for index, slot in enumerate(slots):

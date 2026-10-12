@@ -10,7 +10,7 @@ Conventions :
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Any
 
@@ -30,7 +30,7 @@ from sqlalchemy.types import JSON
 
 
 def utcnow() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 def new_id() -> str:
@@ -47,7 +47,7 @@ def as_utc(value: datetime | None) -> datetime | None:
     if value is None:
         return None
     if value.tzinfo is None:
-        return value.replace(tzinfo=timezone.utc)
+        return value.replace(tzinfo=UTC)
     return value
 
 
@@ -178,8 +178,8 @@ class Account(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
 
-    group: Mapped["AccountGroup | None"] = relationship(back_populates="accounts")
-    targets: Mapped[list["PostTarget"]] = relationship(back_populates="account", cascade="all, delete-orphan")
+    group: Mapped[AccountGroup | None] = relationship(back_populates="accounts")
+    targets: Mapped[list[PostTarget]] = relationship(back_populates="account", cascade="all, delete-orphan")
 
     __table_args__ = (UniqueConstraint("platform", "external_id", name="uq_account_platform_external"),)
 
@@ -271,10 +271,10 @@ class Post(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
 
-    media: Mapped["MediaAsset | None"] = relationship(foreign_keys=[media_asset_id])
-    thumbnail: Mapped["MediaAsset | None"] = relationship(foreign_keys=[thumbnail_media_id])
-    series: Mapped["Series | None"] = relationship()
-    targets: Mapped[list["PostTarget"]] = relationship(
+    media: Mapped[MediaAsset | None] = relationship(foreign_keys=[media_asset_id])
+    thumbnail: Mapped[MediaAsset | None] = relationship(foreign_keys=[thumbnail_media_id])
+    series: Mapped[Series | None] = relationship()
+    targets: Mapped[list[PostTarget]] = relationship(
         back_populates="post", cascade="all, delete-orphan", order_by="PostTarget.created_at"
     )
 
@@ -316,7 +316,7 @@ class PostTarget(Base):
 
     post: Mapped[Post] = relationship(back_populates="targets")
     account: Mapped[Account] = relationship(back_populates="targets")
-    attempts: Mapped[list["PublishAttempt"]] = relationship(
+    attempts: Mapped[list[PublishAttempt]] = relationship(
         back_populates="target", cascade="all, delete-orphan", order_by="PublishAttempt.attempt_no"
     )
 

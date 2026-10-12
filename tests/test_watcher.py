@@ -4,14 +4,12 @@ from __future__ import annotations
 
 import os
 import time
-from datetime import timedelta
 from pathlib import Path
 
-from sqlalchemy.orm import Session
-
 from socialdock.config import Settings
-from socialdock.models import WatchedFolder, utcnow
-from socialdock.services.watcher import scan_folder, scan_all
+from socialdock.models import WatchedFolder
+from socialdock.services.watcher import scan_all, scan_folder
+from sqlalchemy.orm import Session
 
 
 def test_import_depuis_dossier_surveille(session: Session, settings: Settings, sample_video: Path):

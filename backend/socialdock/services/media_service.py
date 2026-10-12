@@ -14,16 +14,17 @@ import hashlib
 import logging
 import re
 import shutil
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from ..config import Settings, get_settings
-from ..models import MediaAsset, PostTarget, utcnow
 from ..connectors.platform_rules import get_spec
+from ..models import MediaAsset, PostTarget, utcnow
 from .ffprobe import make_thumbnail, probe_file
 
 log = logging.getLogger(__name__)

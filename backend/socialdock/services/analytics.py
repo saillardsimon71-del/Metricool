@@ -11,15 +11,16 @@ import csv
 import io
 import json
 import logging
-from datetime import date, datetime, timedelta, timezone
-from typing import Any, Iterable
+from collections.abc import Iterable
+from datetime import date
+from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..config import Settings, get_settings
 from ..connectors.registry import connector_for_account
-from ..models import Account, AnalyticsSample, PostTarget, PostStatus, utcnow
+from ..models import Account, AnalyticsSample, PostStatus, PostTarget, utcnow
 from .publisher import credential_for
 
 log = logging.getLogger(__name__)
@@ -154,7 +155,6 @@ def compare_post(session: Session, post_id: str, metric: str = "views") -> list[
         value = (row.metrics or {}).get(metric)
         if value is None:
             continue
-        target = session.get(PostTarget, row.post_target_id) if row.post_target_id else None
         account = session.get(Account, row.account_id)
         key = row.account_id
         entry = by_account.setdefault(
@@ -183,8 +183,8 @@ def ranking(session: Session, *, metric: str = "views", limit: int = 20, account
             continue
         if account_ids and row.account_id not in set(account_ids):
             continue
-        account = session.get(Account, row.account_id)
         target = session.get(PostTarget, row.post_target_id) if row.post_target_id else None
+        account = session.get(Account, row.account_id)
         scored.append(
             {
                 "account_id": row.account_id,

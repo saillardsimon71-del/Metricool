@@ -2,24 +2,24 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
-from sqlalchemy.orm import Session
-
-from socialdock.models import Account, MediaAsset, PostStatus, PostTarget
+from socialdock.models import MediaAsset, PostStatus, PostTarget
 from socialdock.services.posts import PostError, cancel_target, publish_now, schedule_target, unschedule_target
 from socialdock.services.publisher import acquire_lock
 from socialdock.services.scheduler import SchedulerEngine
+from sqlalchemy.orm import Session
+
 from tests.conftest import FakeConnector, make_post
 
 
 def utc_past(minutes: int = 5) -> datetime:
-    return datetime.now(timezone.utc) - timedelta(minutes=minutes)
+    return datetime.now(UTC) - timedelta(minutes=minutes)
 
 
 def utc_future(minutes: int = 30) -> datetime:
-    return datetime.now(timezone.utc) + timedelta(minutes=minutes)
+    return datetime.now(UTC) + timedelta(minutes=minutes)
 
 
 def statuses(session: Session, post) -> list[str]:
@@ -143,7 +143,7 @@ def test_publication_immediate_et_annulation(session: Session, post):
     target = post.targets[0]
     publish_now(session, target)
     assert target.status == PostStatus.SCHEDULED.value
-    assert target.scheduled_at <= datetime.now(timezone.utc) + timedelta(seconds=1)
+    assert target.scheduled_at <= datetime.now(UTC) + timedelta(seconds=1)
     cancel_target(session, target)
     assert target.status == PostStatus.CANCELLED.value
 

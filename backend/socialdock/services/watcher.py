@@ -11,7 +11,7 @@ Sécurité :
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -20,7 +20,7 @@ from sqlalchemy.orm import Session
 
 from ..config import Settings, get_settings
 from ..logging_setup import log_event
-from ..models import Post, PostStatus, PostTarget, WatchedFolder, utcnow
+from ..models import Post, WatchedFolder, utcnow
 from .media_service import ImportResult, MediaError, import_path, is_supported
 
 log = logging.getLogger(__name__)
@@ -59,7 +59,7 @@ def scan_folder(
         except OSError as exc:
             result["errors"].append(f"{candidate.name} : {exc}")
             continue
-        mtime = datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc)
+        mtime = datetime.fromtimestamp(stat.st_mtime, tz=UTC)
         if now - mtime < timedelta(seconds=STABILITY_SECONDS):
             result["unstable"].append(candidate.name)
             continue
@@ -92,7 +92,7 @@ def scan_folder(
 
 def create_draft_from_media(session: Session, asset, *, template_id: str | None = None) -> Post:
     """Crée un brouillon prêt à compléter depuis un média fraîchement importé."""
-    from .templates import apply_template, build_payload_for
+    from .templates import apply_template
 
     post = Post(
         title=asset.display_name,

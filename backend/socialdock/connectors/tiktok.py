@@ -23,7 +23,7 @@ from __future__ import annotations
 
 import logging
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -179,10 +179,10 @@ class TikTokConnector(SocialConnector):
             "scope": payload.get("scope"),
             "open_id": payload.get("open_id"),
             "token_type": payload.get("token_type", "Bearer"),
-            "obtained_at": datetime.now(timezone.utc).isoformat(),
-            "expires_at": datetime.fromtimestamp(time.time() + expires_in, tz=timezone.utc).isoformat(),
+            "obtained_at": datetime.now(UTC).isoformat(),
+            "expires_at": datetime.fromtimestamp(time.time() + expires_in, tz=UTC).isoformat(),
             "refresh_expires_at": (
-                datetime.fromtimestamp(time.time() + int(refresh_expires), tz=timezone.utc).isoformat() if refresh_expires else None
+                datetime.fromtimestamp(time.time() + int(refresh_expires), tz=UTC).isoformat() if refresh_expires else None
             ),
         }
 
@@ -348,7 +348,7 @@ class TikTokConnector(SocialConnector):
             if not video_url and data.get("upload_url"):
                 chunk_size = int(body["source_info"].get("chunk_size") or size)
                 self._upload_chunks(context, data["upload_url"], context.media_path, size, chunk_size)
-            result = self._poll_status(context, publish_id)
+            self._poll_status(context, publish_id)
             remote_url = None
             username = ((info.get("creator_info") or {}).get("creator_username"))
             if username:

@@ -6,7 +6,7 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
-from ..models import Post, PostStatus, PostTarget, PostTemplate, utcnow
+from ..models import Post, PostStatus, PostTarget, PostTemplate
 
 
 def default_payload(platform: str, post: Post, *, hashtags: list[str] | None = None) -> dict[str, Any]:

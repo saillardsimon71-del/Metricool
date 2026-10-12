@@ -5,12 +5,11 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from sqlalchemy.orm import Session
-
 from socialdock.config import Settings
 from socialdock.models import MediaAsset
 from socialdock.services import media_service
 from socialdock.services.media_service import MediaError
+from sqlalchemy.orm import Session
 
 
 @pytest.mark.ffmpeg

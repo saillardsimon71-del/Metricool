@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from datetime import date, datetime, time as dtime, timedelta, timezone
+from datetime import UTC, date, datetime
+from datetime import time as dtime
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -30,8 +31,8 @@ def calendar_range(
 ) -> dict[str, Any]:
     if (end - start).days > 400:
         raise HTTPException(status_code=400, detail="Plage trop large (400 jours maximum).")
-    start_dt = datetime.combine(start, dtime.min, tzinfo=timezone.utc)
-    end_dt = datetime.combine(end, dtime.max, tzinfo=timezone.utc)
+    start_dt = datetime.combine(start, dtime.min, tzinfo=UTC)
+    end_dt = datetime.combine(end, dtime.max, tzinfo=UTC)
     targets, total = post_service.list_targets(
         session, start=start_dt, end=end_dt, account_ids=account_id, status=status, limit=2000
     )

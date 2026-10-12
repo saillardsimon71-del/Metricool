@@ -7,7 +7,6 @@ from pathlib import Path
 
 import httpx
 import pytest
-
 from socialdock.connectors.base import PermanentError, PublishContext, RetriableError
 from socialdock.connectors.tiktok import MAX_CHUNK, MIN_CHUNK, TikTokConnector
 from socialdock.models import Account, Post, PostTarget
@@ -45,7 +44,6 @@ def test_plan_de_morceaux_conforme_aux_regles_tiktok():
     assert TikTokConnector._chunk_plan(200 * 1024 * 1024) == MAX_CHUNK
     # Au-delà de 1000 morceaux de 64 Mo, FILE_UPLOAD ne peut pas respecter les
     # règles TikTok : le connecteur doit refuser explicitement.
-    from socialdock.connectors.base import PermanentError
 
     with pytest.raises(PermanentError, match="FILE_UPLOAD"):
         TikTokConnector._chunk_plan(90 * 1024 * 1024 * 1024)

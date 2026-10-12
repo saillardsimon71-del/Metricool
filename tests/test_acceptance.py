@@ -11,14 +11,13 @@ from datetime import timedelta
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import select
-from sqlalchemy.orm import Session
-
 from socialdock.config import Settings
 from socialdock.database import get_session_factory
 from socialdock.models import PostStatus, PostTarget, PublishAttempt, utcnow
 from socialdock.services.media_service import import_path
 from socialdock.services.scheduler import SchedulerEngine
+from sqlalchemy import select
+
 from tests.conftest import FakeConnector
 
 

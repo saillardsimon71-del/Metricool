@@ -8,7 +8,7 @@ import { mockApi } from '../../test/mockApi'
 import { ToastProvider } from '../../hooks/useToasts'
 import type { Account, Media } from '../../lib/types'
 
-const accounts = ['tiktok', 'instagram', 'youtube'].flatMap((platform, index) =>
+const accounts = ['tiktok', 'instagram', 'youtube'].flatMap((platform, _index) =>
   [1, 2].map((n) => ({
     id: `${platform}-${n}`,
     platform,

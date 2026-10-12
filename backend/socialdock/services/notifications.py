@@ -11,7 +11,7 @@ import logging
 import os
 import subprocess
 import sys
-from typing import Callable
+from collections.abc import Callable
 
 log = logging.getLogger(__name__)
 
@@ -24,7 +24,7 @@ def _windows_notify(title: str, message: str, level: str = "info") -> bool:
         "$n = New-Object System.Windows.Forms.NotifyIcon;"
         "$n.Icon = [System.Drawing.SystemIcons]::Information;"
         "$n.Visible = $true;"
-        f"$n.ShowBalloonTip(6000, [string]$args[0], [string]$args[1], [System.Windows.Forms.ToolTipIcon]::Info);"
+        "$n.ShowBalloonTip(6000, [string]$args[0], [string]$args[1], [System.Windows.Forms.ToolTipIcon]::Info);"
         "Start-Sleep -Seconds 7;"
         "$n.Dispose()"
     )

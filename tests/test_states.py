@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pytest
-
 from socialdock.models import PostStatus
 from socialdock.services.states import InvalidTransition, assert_transition, can_transition, describe_status, needs_human
 

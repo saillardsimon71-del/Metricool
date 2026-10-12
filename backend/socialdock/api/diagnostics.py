@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 
 from ..models import EventLog
 from ..security import redact
-from ..services.diagnostics import build_report, export_text_report, human_summary
+from ..services.diagnostics import build_report, export_text_report
 from ..services.scheduler import SchedulerEngine
 from .deps import db_session, get_current_settings, get_scheduler
 

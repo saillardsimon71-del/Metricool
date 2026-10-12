@@ -7,8 +7,7 @@ from pathlib import Path
 
 import httpx
 import pytest
-
-from socialdock.connectors.base import AmbiguousError, PermanentError, PublishContext, RetriableError
+from socialdock.connectors.base import PermanentError, PublishContext, RetriableError
 from socialdock.connectors.youtube import YouTubeConnector
 from socialdock.models import Account, Post, PostTarget
 

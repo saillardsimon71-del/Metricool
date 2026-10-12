@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from datetime import date, datetime, time as dtime
+from datetime import date, datetime
+from datetime import time as dtime
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator

@@ -43,3 +43,9 @@ Thumbs.db
 
 # Builds d'installation
 release/
+
+# Tests & rapports
+playwright-report/
+test-results/
+coverage/
+pytest-report.xml

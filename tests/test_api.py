@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, timedelta
 
 import pytest
 from fastapi.testclient import TestClient
-
-from socialdock.models import PostStatus, utcnow
+from socialdock.models import utcnow
 from socialdock.services.media_service import import_path
 
 

@@ -5,12 +5,11 @@ from __future__ import annotations
 from datetime import date, timedelta
 
 import pytest
+from socialdock.models import AnalyticsSample, MediaAsset, PostStatus, utcnow
+from socialdock.services.analytics import available_metrics, collect_all, collect_for_target, export_csv, ranking, series
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from socialdock.config import Settings
-from socialdock.models import Account, AnalyticsSample, MediaAsset, PostStatus, utcnow
-from socialdock.services.analytics import available_metrics, collect_all, collect_for_target, export_csv, ranking, series
 from tests.conftest import FakeConnector, make_post
 
 

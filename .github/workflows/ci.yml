@@ -1,0 +1,164 @@
+name: CI
+
+on:
+  push:
+    branches: [main, "arena/**"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.11"
+  NODE_VERSION: "22"
+
+jobs:
+  backend:
+    name: Backend — lint + tests (Python ${{ env.PYTHON_VERSION }})
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Dépendances
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-dev.txt
+
+      - name: Lint (ruff)
+        run: python -m ruff check backend tests
+
+      - name: Tests (pytest)
+        env:
+          PYTHONPATH: backend
+        run: |
+          python -m pytest --cov=backend/socialdock --cov-report=term-missing --junitxml=pytest-report.xml
+
+      - name: Rapport de tests
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytest-report
+          path: pytest-report.xml
+          if-no-files-found: ignore
+
+  frontend:
+    name: Frontend — lint + typecheck + build + tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Dépendances
+        run: npm ci
+
+      - name: Lint (ESLint)
+        run: npx eslint src e2e --ext .ts,.tsx --max-warnings 0
+
+      - name: Typecheck (tsc)
+        run: npx tsc -b --pretty false
+
+      - name: Tests (Vitest)
+        run: npm test
+
+      - name: Build (Vite)
+        run: npm run build
+
+      - name: Artefact de build
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist
+          if-no-files-found: error
+
+  security:
+    name: Sécurité — dépendances et secrets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Audit des dépendances Python
+        run: |
+          python -m pip install --upgrade pip pip-audit
+          python -m pip_audit --requirement requirements.txt
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Audit des dépendances npm
+        working-directory: frontend
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Aucun secret versionné
+        run: |
+          if git ls-files | grep -E '(^|/)\.env$|secrets/.*\.(token|key)$|ingest\.token$'; then
+            echo "Fichier de secret versionné détecté" >&2
+            exit 1
+          fi
+          echo "Aucun fichier de secret versionné"
+
+  e2e:
+    name: E2E — Playwright (navigateur réel)
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Dépendances backend
+        run: python -m pip install --upgrade pip && python -m pip install -r requirements.txt
+
+      - name: Dépendances frontend
+        run: npm ci
+
+      - name: Build du frontend (servi par FastAPI)
+        run: npm run build
+
+      - name: Navigateurs Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: Tests de bout en bout
+        run: npx playwright test
+
+      - name: Rapport Playwright
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: frontend/playwright-report
+          if-no-files-found: ignore

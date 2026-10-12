@@ -23,7 +23,7 @@ def db_session() -> Session:  # pragma: no cover - alias FastAPI
     yield from get_db()
 
 
-def get_scheduler(request: Request) -> "SchedulerEngine | None":
+def get_scheduler(request: Request) -> SchedulerEngine | None:
     return getattr(request.app.state, "scheduler", None)
 
 

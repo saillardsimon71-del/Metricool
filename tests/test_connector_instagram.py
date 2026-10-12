@@ -6,7 +6,6 @@ from pathlib import Path
 
 import httpx
 import pytest
-
 from socialdock.connectors.base import PermanentError, PublishContext
 from socialdock.connectors.instagram import InstagramConnector
 from socialdock.models import Account, Post, PostTarget

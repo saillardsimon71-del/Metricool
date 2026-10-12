@@ -15,8 +15,9 @@ Règles de sûreté appliquées ici (et non dans l'interface) :
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timedelta, timezone
-from typing import Any, Callable
+from collections.abc import Callable
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
 from sqlalchemy.orm import Session
 
@@ -28,7 +29,6 @@ from ..models import (
     Account,
     AttemptOutcome,
     AttemptPhase,
-    MediaAsset,
     Post,
     PostStatus,
     PostTarget,
@@ -75,8 +75,8 @@ def _needs_refresh(credential: dict[str, Any]) -> bool:
     except ValueError:
         return False
     if expiry.tzinfo is None:
-        expiry = expiry.replace(tzinfo=timezone.utc)
-    return expiry <= datetime.now(timezone.utc) + timedelta(minutes=2)
+        expiry = expiry.replace(tzinfo=UTC)
+    return expiry <= datetime.now(UTC) + timedelta(minutes=2)
 
 
 def acquire_lock(session: Session, target: PostTarget, owner: str, *, minutes: int = LOCK_MINUTES) -> bool:

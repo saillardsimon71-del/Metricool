@@ -24,7 +24,7 @@ from ..schemas import (
 )
 from ..services import posts as post_service
 from ..services.posts import PostError
-from ..services.publisher import resolve_uncertain, refresh_remote_status
+from ..services.publisher import refresh_remote_status, resolve_uncertain
 from ..services.states import describe_status
 from ..services.templates import apply_template, template_from_post
 from .deps import db_session

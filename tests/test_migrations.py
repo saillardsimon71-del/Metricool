@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
 from sqlalchemy import create_engine, inspect
 
 TABLES_ATTENDUES = {
@@ -40,7 +39,7 @@ def test_upgrade_head_cree_le_schema_complet(tmp_path: Path):
         tables = set(inspect(engine).get_table_names())
     finally:
         engine.dispose()
-    assert TABLES_ATTENDUES <= tables, f"tables manquantes : {TABLES_ATTENDUES - tables}"
+    assert tables >= TABLES_ATTENDUES, f"tables manquantes : {TABLES_ATTENDUES - tables}"
     assert "alembic_version" in tables
 
 

@@ -8,6 +8,7 @@ inventées.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import logging
 import os
@@ -183,10 +184,8 @@ def probe_file(path: str | Path, timeout: int = 60) -> ProbeResult:
     result.mime_type = _guess_mime(path.suffix.lower(), result.container)
     result.kind = "image" if (video_stream and not audio_stream and _is_image_container(result.container, video_stream)) else "video"
     if fmt.get("duration"):
-        try:
+        with contextlib.suppress(TypeError, ValueError):
             result.duration_seconds = round(float(fmt["duration"]), 3)
-        except (TypeError, ValueError):
-            pass
     if video_stream:
         result.width = video_stream.get("width")
         result.height = video_stream.get("height")

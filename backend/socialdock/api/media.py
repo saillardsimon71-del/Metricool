@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Upload
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
-from ..config import Settings, get_settings
+from ..config import Settings
 from ..models import MediaAsset
 from ..schemas import MediaOut, MediaPatch, MediaTransformRequest, MediaValidation
 from ..services import media_service

@@ -14,9 +14,10 @@ from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from . import __product__, __version__
-from .api import accounts, calendar, diagnostics, ingest, media, oauth, posts, scheduler, settings as settings_api, stats, system, watchers
+from .api import accounts, calendar, diagnostics, ingest, media, oauth, posts, scheduler, stats, system, watchers
+from .api import settings as settings_api
 from .config import Settings, get_settings, set_settings
-from .database import create_all, get_engine, init_engine
+from .database import create_all, init_engine
 from .logging_setup import configure_logging, log_event
 from .models import LogLevel
 from .services.notifications import NotificationService

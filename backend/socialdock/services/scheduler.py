@@ -15,12 +15,14 @@ Aucune file en mémoire : l'état vit dans SQLite (``post_targets`` +
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
 import socket
 import threading
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
-from typing import Any, Callable
+from datetime import UTC, datetime, timedelta, timezone
+from typing import Any
 
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
@@ -139,10 +141,8 @@ class SchedulerEngine:
         self._stop.set()
         if self._task is not None:
             self._task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError, Exception):
                 await self._task
-            except (asyncio.CancelledError, Exception):  # noqa: BLE001
-                pass
             self._task = None
         self._status.running = False
         self._status.next_run_at = None
@@ -158,7 +158,7 @@ class SchedulerEngine:
             self._status.next_run_at = utcnow() + timedelta(seconds=self.tick_seconds)
             try:
                 await asyncio.wait_for(self._stop_async(), timeout=self.tick_seconds)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 continue
 
     async def _stop_async(self) -> None:
@@ -327,4 +327,4 @@ def recent_events(session: Session, limit: int = 50, level: str | None = None) -
 
 
 def _tz() -> timezone:
-    return timezone.utc
+    return UTC

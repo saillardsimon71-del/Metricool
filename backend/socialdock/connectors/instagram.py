@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import logging
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import httpx
@@ -36,7 +36,7 @@ from .base import (
     SocialConnector,
     StatusResult,
 )
-from .oauth2 import bearer_headers, build_authorization_url, exchange_code, refresh_token
+from .oauth2 import bearer_headers, build_authorization_url, exchange_code
 
 log = logging.getLogger(__name__)
 
@@ -169,8 +169,8 @@ class InstagramConnector(SocialConnector):
             "token_type": payload.get("token_type", "Bearer"),
             "user_id": str(payload.get("user_id") or ""),
             "expires_in": expires_in,
-            "obtained_at": datetime.now(timezone.utc).isoformat(),
-            "expires_at": datetime.fromtimestamp(time.time() + expires_in, tz=timezone.utc).isoformat(),
+            "obtained_at": datetime.now(UTC).isoformat(),
+            "expires_at": datetime.fromtimestamp(time.time() + expires_in, tz=UTC).isoformat(),
         }
 
     def get_account_info(self, credential: dict[str, Any]) -> dict[str, Any]:
@@ -387,7 +387,7 @@ class InstagramConnector(SocialConnector):
             values = item.get("values") or []
             if name and values and values[0].get("value") is not None:
                 metrics[name] = values[0]["value"]
-        return {"metrics": metrics, "source": "instagram.media.insights", "fetched_at": datetime.now(timezone.utc).isoformat()}
+        return {"metrics": metrics, "source": "instagram.media.insights", "fetched_at": datetime.now(UTC).isoformat()}
 
     def _raise_for_error(self, response: httpx.Response) -> None:
         if response.status_code < 400:

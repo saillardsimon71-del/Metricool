@@ -4,19 +4,17 @@ from __future__ import annotations
 
 import logging
 import secrets
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
 from typing import Any
 
-import httpx
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..config import Settings, get_settings
-from ..connectors.base import PermanentError, SocialConnector
+from ..connectors.base import PermanentError
 from ..connectors.registry import connector_for_account
 from ..logging_setup import log_event
 from ..models import Account, AccountGroup, AccountStatus, OAuthState, Platform, as_utc, utcnow
-from ..security import SecretVault
 from .publisher import credential_for, store_credential
 
 log = logging.getLogger(__name__)

@@ -9,7 +9,6 @@ from sqlalchemy.orm import Session
 
 from .. import __product__, __version__
 from ..connectors.platform_rules import SPECS
-from ..schemas import SchedulerStatusOut
 from ..services.posts import dashboard_summary
 from ..services.scheduler import SchedulerEngine, scheduler_status_dict
 from .deps import db_session, get_current_settings, get_scheduler

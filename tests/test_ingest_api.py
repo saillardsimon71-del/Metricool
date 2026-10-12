@@ -6,7 +6,6 @@ from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
-
 from socialdock.config import Settings
 from socialdock.models import WatchedFolder
 
@@ -41,7 +40,6 @@ def test_ingestion_par_chemin_dans_un_dossier_surveille(client: TestClient, toke
     watched.mkdir(exist_ok=True)
     source = watched / "rendu.mp4"
     source.write_bytes(sample_video.read_bytes())
-    session_client = client.get("/api/health")  # la base est initialisée par le client
     from socialdock.database import get_session_factory
 
     session = get_session_factory()()

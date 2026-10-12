@@ -5,13 +5,11 @@ from __future__ import annotations
 from datetime import timedelta
 
 import pytest
-from sqlalchemy import select
-from sqlalchemy.orm import Session
-
+from socialdock.connectors.youtube import YouTubeConnector
 from socialdock.models import OAuthState, as_utc, utcnow
 from socialdock.security import SecretVault
 from socialdock.services.accounts import AccountError, complete_oauth, start_oauth
-from socialdock.connectors.youtube import YouTubeConnector
+from sqlalchemy.orm import Session
 
 
 class FakeOAuthConnector(YouTubeConnector):

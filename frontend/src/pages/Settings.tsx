@@ -74,7 +74,7 @@ export default function Settings() {
             <p>Endpoint : <code className="text-brand-300">POST /api/ingest/video</code></p>
             <p>En-tête : <code className="text-brand-300">X-SocialDock-Token</code></p>
             <div className="flex items-center gap-2">
-              <code className="flex-1 truncate rounded bg-surface-subtle px-2 py-1">{settings.data!.integrations.ingest_token}</code>
+              <code data-testid="ingest-token" className="flex-1 truncate rounded bg-surface-subtle px-2 py-1">{settings.data!.integrations.ingest_token}</code>
               <Button onClick={() => navigator.clipboard.writeText(settings.data!.integrations.ingest_token).then(() => notify('Token copié', 'success'))}><Copy size={14} /></Button>
               <Button onClick={() => rotate.mutate()} loading={rotate.isPending}><RotateCcw size={14} /></Button>
             </div>

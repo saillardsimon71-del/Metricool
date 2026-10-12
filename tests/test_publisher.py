@@ -3,17 +3,16 @@
 from __future__ import annotations
 
 import pytest
+from socialdock.models import AttemptOutcome, MediaAsset, PostStatus, PublishAttempt
+from socialdock.services.publisher import publish_target, refresh_remote_status, resolve_uncertain
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from socialdock.config import Settings
-from socialdock.models import AttemptOutcome, MediaAsset, PostStatus, PostTarget, PublishAttempt
-from socialdock.services.publisher import publish_target, refresh_remote_status, resolve_uncertain
 from tests.conftest import FakeConnector, make_post
 
 
 @pytest.fixture()
-def post(session: Session, imported_media: MediaAsset, demo_accounts) -> "object":
+def post(session: Session, imported_media: MediaAsset, demo_accounts) -> object:
     return make_post(session, imported_media, demo_accounts[:2])
 
 

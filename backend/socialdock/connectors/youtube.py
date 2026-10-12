@@ -17,7 +17,7 @@ from __future__ import annotations
 import json
 import logging
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import httpx
@@ -174,8 +174,8 @@ class YouTubeConnector(SocialConnector):
             "refresh_token": payload.get("refresh_token"),
             "scope": payload.get("scope"),
             "token_type": payload.get("token_type", "Bearer"),
-            "obtained_at": datetime.now(timezone.utc).isoformat(),
-            "expires_at": datetime.fromtimestamp(time.time() + expires_in, tz=timezone.utc).isoformat(),
+            "obtained_at": datetime.now(UTC).isoformat(),
+            "expires_at": datetime.fromtimestamp(time.time() + expires_in, tz=UTC).isoformat(),
         }
 
     # -- comptes -----------------------------------------------------------
@@ -462,7 +462,7 @@ class YouTubeConnector(SocialConnector):
                     metrics[target] = int(stats[source])
                 except (TypeError, ValueError):
                     continue
-        return {"metrics": metrics, "source": "youtube.videos.statistics", "fetched_at": datetime.now(timezone.utc).isoformat()}
+        return {"metrics": metrics, "source": "youtube.videos.statistics", "fetched_at": datetime.now(UTC).isoformat()}
 
     # -- erreurs -----------------------------------------------------------
     def _raise_for_error(self, response: httpx.Response) -> None:
@@ -486,5 +486,5 @@ class YouTubeConnector(SocialConnector):
 def _iso8601(value: str) -> str:
     parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
     if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=timezone.utc)
+        parsed = parsed.replace(tzinfo=UTC)
     return parsed.isoformat()

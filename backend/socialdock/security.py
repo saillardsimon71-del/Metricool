@@ -12,6 +12,7 @@ clé est protégé par les ACL du répertoire utilisateur.
 from __future__ import annotations
 
 import base64
+import contextlib
 import os
 import re
 import stat
@@ -37,10 +38,8 @@ class SecretError(RuntimeError):
 
 def _restrict_file(path) -> None:
     """Restreint les permissions du fichier clé (POSIX ; no-op sous Windows)."""
-    try:
+    with contextlib.suppress(OSError):  # pragma: no cover - dépend du système de fichiers
         os.chmod(path, stat.S_IRUSR | stat.S_IWUSR)
-    except OSError:  # pragma: no cover - dépend du système de fichiers
-        pass
 
 
 def load_or_create_key(settings: Settings | None = None) -> bytes:

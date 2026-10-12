@@ -63,6 +63,10 @@ class Settings(BaseSettings):
     tiktok_client_key: str | None = None
     tiktok_client_secret: str | None = None
     oauth_redirect_base: str = "http://127.0.0.1:8000"
+    meta_api_version: str = "v23.0"
+    # Hébergement temporaire optionnel pour Instagram (URL publique) — désactivé par défaut
+    instagram_public_base_url: str | None = None
+    instagram_url_ttl_minutes: int = 60
 
     # ---- Chemins dérivés -------------------------------------------------
     @property
@@ -121,6 +125,8 @@ class Settings(BaseSettings):
             "google_configured": bool(self.google_client_id and self.google_client_secret),
             "meta_configured": bool(self.meta_app_id and self.meta_app_secret),
             "tiktok_configured": bool(self.tiktok_client_key and self.tiktok_client_secret),
+            "meta_api_version": self.meta_api_version,
+            "instagram_public_hosting": bool(self.instagram_public_base_url),
         }
 
 

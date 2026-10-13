@@ -20,5 +20,9 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
     css: false,
+    // Les scénarios Playwright (e2e/) portent aussi l'extension .spec.ts :
+    // sans cette limite, Vitest les collecte et échoue sur test.describe().
+    include: ['src/**/*.{test,spec}.{ts,tsx}'],
+    exclude: ['**/node_modules/**', '**/dist/**', 'e2e/**'],
   },
 } as never)

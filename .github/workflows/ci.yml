@@ -160,6 +160,11 @@ jobs:
             tail -n 150 e2e-output.txt
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$status" -ne 0 ]; then
+            # Annotation lisible via l'API (les journaux bruts exigent une session).
+            detail=$(tail -n 60 e2e-output.txt | sed 's/%/%25/g; s/\r/%0D/g; s/$/%0A/' | tr -d '\n')
+            echo "::error::Playwright en échec%0A$detail"
+          fi
           exit $status
 
       - name: Rapport Playwright

@@ -3,7 +3,7 @@ import { expect, test, type APIRequestContext } from '@playwright/test'
 /**
  * Parcours utilisateur complet dans l'interface réelle (français par défaut).
  * Chaque assertion porte sur un élément réellement rendu — aucune maquette.
- * Les tests s'exécutent en série sur une base temporaire vierge.
+ * Chaque test navigue lui-même : un échec n'empêche pas les autres de s'exécuter.
  */
 
 type Account = { id: string; platform: string; display_name: string }
@@ -14,7 +14,7 @@ async function seedAccounts(request: APIRequestContext): Promise<Account[]> {
   return (await response.json()) as Account[]
 }
 
-test.describe.serial('SocialDock — parcours utilisateur', () => {
+test.describe('SocialDock — parcours utilisateur', () => {
   test('les neuf pages sont accessibles et rendues', async ({ page }) => {
     await page.goto('/')
     for (const label of [
@@ -31,8 +31,10 @@ test.describe.serial('SocialDock — parcours utilisateur', () => {
       await expect(page.getByRole('link', { name: label })).toBeVisible()
     }
     await page.getByRole('link', { name: 'Diagnostics' }).click()
-    await expect(page.getByText(/base de données/i).first()).toBeVisible()
-    await expect(page.getByText(/ffmpeg/i).first()).toBeVisible()
+    await expect(page.getByText('Système').first()).toBeVisible()
+    await expect(page.getByText('SQLite').first()).toBeVisible()
+    await expect(page.getByText('FFmpeg').first()).toBeVisible()
+    await expect(page.getByText('Moteur de programmation').first()).toBeVisible()
   })
 
   test('six comptes de démonstration avec leur matrice de capacités', async ({ page }) => {
@@ -109,6 +111,6 @@ test.describe.serial('SocialDock — parcours utilisateur', () => {
 
   test('les statistiques n\'inventent aucune métrique', async ({ page }) => {
     await page.goto('/analytics')
-    await expect(page.getByText(/jamais estimée|aucune donnée|réelle/i).first()).toBeVisible({ timeout: 20_000 })
+    await expect(page.getByText(/jamais une estimation|Aucune donnée disponible/i).first()).toBeVisible({ timeout: 20_000 })
   })
 })

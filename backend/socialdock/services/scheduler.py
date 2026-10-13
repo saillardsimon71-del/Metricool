@@ -15,9 +15,9 @@ Aucune file en mémoire : l'état vit dans SQLite (``post_targets`` +
 from __future__ import annotations
 
 import asyncio
-import os
 import contextlib
 import logging
+import os
 import socket
 import threading
 from collections.abc import Callable

@@ -175,7 +175,6 @@ def test_le_scheduler_demarre_avec_l_application(settings):
     """Régression : `python -m socialdock run` ne passait aucun moteur,
     la boucle de programmation ne démarrait donc jamais."""
     from fastapi.testclient import TestClient
-
     from socialdock.main import create_app
 
     with TestClient(create_app(settings, run_scheduler=True)) as client:
@@ -187,7 +186,6 @@ def test_le_scheduler_demarre_avec_l_application(settings):
 
 def test_le_scheduler_ne_demarre_pas_quand_il_est_desactive(settings):
     from fastapi.testclient import TestClient
-
     from socialdock.main import create_app
 
     with TestClient(create_app(settings, run_scheduler=False)) as client:

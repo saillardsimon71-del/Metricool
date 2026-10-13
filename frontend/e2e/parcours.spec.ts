@@ -89,7 +89,7 @@ test.describe('SocialDock — parcours utilisateur', () => {
 
   test('les paramètres exposent le jeton d\'ingestion Studio IA', async ({ page }) => {
     await page.goto('/settings')
-    await expect(page.getByText('Intégration Studio IA')).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Intégration Studio IA' })).toBeVisible()
     const token = await page.getByTestId('ingest-token').textContent()
     expect((token ?? '').trim().length).toBeGreaterThanOrEqual(32)
     await expect(page.getByText('X-SocialDock-Token')).toBeVisible()
@@ -106,7 +106,10 @@ test.describe('SocialDock — parcours utilisateur', () => {
     expect(scheduled.ok()).toBeTruthy()
 
     await page.goto('/calendar')
-    await expect(page.getByText('Rendez-vous calendrier').first()).toBeVisible({ timeout: 20_000 })
+    await expect(page.getByRole('heading', { name: 'Calendrier éditorial' })).toBeVisible({ timeout: 20_000 })
+    await page.getByRole('button', { name: 'Liste' }).click()
+    await expect(page.getByRole('heading', { name: 'File d’attente et publications' })).toBeVisible()
+    await expect(page.getByText('Rendez-vous calendrier').first()).toBeVisible()
   })
 
   test('les statistiques n\'inventent aucune métrique', async ({ page }) => {

@@ -150,7 +150,17 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Tests de bout en bout
-        run: npx playwright test
+        run: |
+          set +e
+          npx playwright test --reporter=list 2>&1 | tee e2e-output.txt
+          status=${PIPESTATUS[0]}
+          {
+            echo '### Résultat Playwright'
+            echo '```'
+            tail -n 150 e2e-output.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit $status
 
       - name: Rapport Playwright
         if: always()

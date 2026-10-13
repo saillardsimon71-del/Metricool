@@ -62,7 +62,10 @@ def create_app(settings: Settings | None = None, *, run_scheduler: bool = True, 
     init_engine(settings)
     create_all()
 
-    scheduler_engine = engine
+    # Sans moteur explicite, on en construit un : sinon le démarrage standard
+    # (`python -m socialdock run`, donc start.bat) ne lancerait jamais la boucle
+    # de programmation et aucune publication ne partirait à l'heure prévue.
+    scheduler_engine = engine if engine is not None else build_scheduler(settings)
     notifications = NotificationService(enabled=True)
 
     @asynccontextmanager

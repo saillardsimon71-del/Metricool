@@ -169,3 +169,26 @@ def test_boucle_asyncio_demarre_et_s_arrete(session: Session, engine: SchedulerE
 
     asyncio.run(scenario())
     assert engine.status.running is False
+
+
+def test_le_scheduler_demarre_avec_l_application(settings):
+    """Régression : `python -m socialdock run` ne passait aucun moteur,
+    la boucle de programmation ne démarrait donc jamais."""
+    from fastapi.testclient import TestClient
+
+    from socialdock.main import create_app
+
+    with TestClient(create_app(settings, run_scheduler=True)) as client:
+        status = client.get("/api/scheduler/status").json()
+        assert status["running"] is True, "la boucle de programmation doit tourner"
+        assert status["pid"] is not None
+        assert status["tick_seconds"] == settings.scheduler_tick_seconds
+
+
+def test_le_scheduler_ne_demarre_pas_quand_il_est_desactive(settings):
+    from fastapi.testclient import TestClient
+
+    from socialdock.main import create_app
+
+    with TestClient(create_app(settings, run_scheduler=False)) as client:
+        assert client.get("/api/scheduler/status").json()["running"] is False

@@ -15,6 +15,7 @@ Aucune file en mémoire : l'état vit dans SQLite (``post_targets`` +
 from __future__ import annotations
 
 import asyncio
+import os
 import contextlib
 import logging
 import socket
@@ -90,7 +91,7 @@ class SchedulerStatus:
             "uncertain_count": self.uncertain_count,
             "late_count": self.late_count,
             "next_run_at": self.next_run_at.isoformat() if self.next_run_at else None,
-            "pid": None,
+            "pid": os.getpid() if self.running else None,
         }
 
 

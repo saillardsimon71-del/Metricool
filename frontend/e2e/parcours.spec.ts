@@ -92,7 +92,8 @@ test.describe('SocialDock — parcours utilisateur', () => {
     await expect(page.getByRole('heading', { name: 'Intégration Studio IA' })).toBeVisible()
     const token = await page.getByTestId('ingest-token').textContent()
     expect((token ?? '').trim().length).toBeGreaterThanOrEqual(32)
-    await expect(page.getByText('X-SocialDock-Token')).toBeVisible()
+    // « X-SocialDock-Token » figure aussi dans l'exemple curl : on vise la ligne d'en-tête.
+    await expect(page.getByText('X-SocialDock-Token').first()).toBeVisible()
   })
 
   test('le calendrier affiche une publication programmée', async ({ page, request }) => {

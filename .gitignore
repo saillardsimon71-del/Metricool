@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+dist/
+build/
+*.egg-info/
+
+# Node
+node_modules/
+frontend/dist/
+frontend/.vite/
+*.local
+
+# Secrets & données utilisateur (JAMAIS commiter)
+.env
+.env.*
+!.env.example
+*.key
+secrets/
+data/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite3
+
+# Médias importés par les tests
+tests/_artifacts/
+tmp/
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Builds d'installation
+release/
+
+# Tests & rapports
+playwright-report/
+test-results/
+coverage/
+pytest-report.xml

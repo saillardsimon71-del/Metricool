@@ -1,13 +1,17 @@
-import { format, formatDistanceToNow, parseISO } from 'date-fns'
+import { formatDistanceToNow, parseISO } from 'date-fns'
 import { fr } from 'date-fns/locale'
 
 export const formatDateTime = (iso: string | null, tz = 'Europe/Paris'): string => {
   if (!iso) return '—'
   const date = parseISO(iso)
-  return `${format(date, 'dd MMM yyyy HH:mm', { locale: fr })} (${tzShort(tz)})`
+  return `${new Intl.DateTimeFormat('fr-FR', {
+    timeZone: tz, day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
+  }).format(date)} (${tzShort(tz)})`
 }
 
-export const formatTime = (iso: string | null): string => (iso ? format(parseISO(iso), 'HH:mm') : '—')
+export const formatTime = (iso: string | null): string => (iso ? new Intl.DateTimeFormat('fr-FR', {
+  timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit',
+}).format(parseISO(iso)) : '—')
 
 export const formatRelative = (iso: string | null): string =>
   iso ? formatDistanceToNow(parseISO(iso), { addSuffix: true, locale: fr }) : '—'
@@ -30,9 +34,24 @@ const tzShort = (tz: string): string => (tz === 'Europe/Paris' ? 'Paris' : tz.sp
 
 export const toLocalInput = (iso: string | null): string => {
   if (!iso) return ''
-  const date = new Date(iso)
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Paris', year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+  }).formatToParts(new Date(iso))
+  const values = Object.fromEntries(parts.map(({ type, value }) => [type, value]))
+  return `${values.year}-${values.month}-${values.day}T${values.hour}:${values.minute}`
 }
 
-export const fromLocalInput = (value: string): string => new Date(value).toISOString()
+export const fromLocalInput = (value: string, originalIso?: string | null): string => {
+  if (originalIso && toLocalInput(originalIso) === value) return new Date(originalIso).toISOString()
+  const wallTime = Date.parse(`${value}:00.000Z`)
+  const candidates = new Set<number>()
+  for (const days of [-1, 0, 1]) {
+    const sample = wallTime + days * 86_400_000
+    const offset = Date.parse(`${toLocalInput(new Date(sample).toISOString())}:00.000Z`) - sample
+    const candidate = wallTime - offset
+    if (toLocalInput(new Date(candidate).toISOString()) === value) candidates.add(candidate)
+  }
+  if (!candidates.size) throw new Error('Cette heure n\'existe pas dans le fuseau Europe/Paris.')
+  return new Date(Math.min(...candidates)).toISOString()
+}

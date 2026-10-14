@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { PageHeader } from '../components/AppShell'
 import { Button, Card, EmptyState, Field, Input, Select, Spinner } from '../components/ui'
 import { api } from '../lib/api'
-import { formatRelative } from '../lib/format'
+import { formatRelative, toLocalInput } from '../lib/format'
 import { useToasts } from '../hooks/useToasts'
 import type { Account, Media, Template, WatchedFolder } from '../lib/types'
 
@@ -86,7 +86,7 @@ export default function Automations() {
               </Field>
               <div className="grid grid-cols-3 gap-3">
                 <Field label="Jours"><Input type="number" min={1} max={60} value={days} onChange={(event) => setDays(Number(event.target.value))} /></Field>
-                <Field label="Horaires (UTC)"><Input value={times} onChange={(event) => setTimes(event.target.value)} /></Field>
+                <Field label="Horaires (Europe/Paris)"><Input value={times} onChange={(event) => setTimes(event.target.value)} /></Field>
                 <Field label="Modèle">
                   <Select value={templateId} onChange={(event) => setTemplateId(event.target.value)}>
                     <option value="">Aucun</option>
@@ -149,10 +149,10 @@ export default function Automations() {
 
 const nextDays = (count: number): string[] => {
   const out: string[] = []
-  const today = new Date()
+  const today = new Date(`${toLocalInput(new Date().toISOString()).slice(0, 10)}T00:00:00Z`)
   for (let index = 0; index < Math.max(1, count); index += 1) {
     const day = new Date(today)
-    day.setDate(today.getDate() + index)
+    day.setUTCDate(today.getUTCDate() + index)
     out.push(day.toISOString().slice(0, 10))
   }
   return out

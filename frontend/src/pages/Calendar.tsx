@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { addDays, addMonths, eachDayOfInterval, endOfMonth, endOfWeek, format, isSameDay, isSameMonth, parseISO, startOfMonth, startOfWeek } from 'date-fns'
+import { addDays, addMonths, eachDayOfInterval, endOfMonth, endOfWeek, format, isSameMonth, startOfMonth, startOfWeek } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { ChevronLeft, ChevronRight, LayoutList } from 'lucide-react'
 import { useMemo, useState } from 'react'
@@ -9,7 +9,7 @@ import PlatformIcon from '../components/PlatformIcon'
 import StatusBadge from '../components/StatusBadge'
 import { Button, Card, EmptyState, ErrorState, Spinner } from '../components/ui'
 import { api, params } from '../lib/api'
-import { formatDateTime, formatTime } from '../lib/format'
+import { formatDateTime, formatTime, fromLocalInput, toLocalInput } from '../lib/format'
 import { useToasts } from '../hooks/useToasts'
 import type { CalendarEntry } from '../lib/types'
 
@@ -19,7 +19,7 @@ interface CalendarResponse { items: CalendarEntry[]; by_day: Record<string, Cale
 
 export default function Calendar() {
   const [view, setView] = useState<View>('month')
-  const [cursor, setCursor] = useState(() => new Date())
+  const [cursor, setCursor] = useState(() => new Date(toLocalInput(new Date().toISOString())))
   const [dragging, setDragging] = useState<string | null>(null)
   const queryClient = useQueryClient()
   const { notify } = useToasts()
@@ -39,7 +39,8 @@ export default function Calendar() {
   })
 
   const move = useMutation({
-    mutationFn: ({ id, iso }: { id: string; iso: string }) => api.post(`/api/calendar/targets/${id}/move`, { scheduled_at: iso }),
+    mutationFn: ({ id, local, original }: { id: string; local: string; original: string }) =>
+      api.post(`/api/calendar/targets/${id}/move`, { scheduled_at: fromLocalInput(local, original) }),
     onSuccess: () => {
       notify('Publication déplacée (données conservées)', 'success')
       queryClient.invalidateQueries({ queryKey: ['calendar'] })
@@ -65,10 +66,8 @@ export default function Calendar() {
     if (!dragging) return
     const entry = query.data?.items.find((item) => item.post_target_id === dragging)
     if (!entry?.scheduled_at) return
-    const original = parseISO(entry.scheduled_at)
-    const next = new Date(day)
-    next.setHours(original.getHours(), original.getMinutes(), 0, 0)
-    move.mutate({ id: dragging, iso: next.toISOString() })
+    const local = `${format(day, 'yyyy-MM-dd')}T${toLocalInput(entry.scheduled_at).slice(11)}`
+    move.mutate({ id: dragging, local, original: entry.scheduled_at })
     setDragging(null)
   }
 
@@ -87,7 +86,7 @@ export default function Calendar() {
               <span className="min-w-[160px] text-center text-sm font-medium capitalize">{format(cursor, 'MMMM yyyy', { locale: fr })}</span>
               <Button onClick={() => shift(1)} aria-label="Période suivante"><ChevronRight size={16} /></Button>
             </div>
-            <Button onClick={() => setCursor(new Date())}>Aujourd’hui</Button>
+            <Button onClick={() => setCursor(new Date(toLocalInput(new Date().toISOString())))}>Aujourd’hui</Button>
             <div className="flex rounded-lg border border-line">
               {(['month', 'week', 'day', 'list'] as View[]).map((item) => (
                 <button
@@ -117,7 +116,7 @@ export default function Calendar() {
             <div key={label} className="border-b border-line bg-surface-subtle px-2 py-2 text-center text-xs font-medium text-ink-muted">{label}</div>
           ))}
           {days.map((day) => {
-            const entries = (query.data!.items ?? []).filter((item) => item.scheduled_at && isSameDay(parseISO(item.scheduled_at), day))
+            const entries = (query.data!.items ?? []).filter((item) => item.scheduled_at && toLocalInput(item.scheduled_at).slice(0, 10) === format(day, 'yyyy-MM-dd'))
             const outside = !isSameMonth(day, range.start)
             return (
               <div

@@ -34,6 +34,15 @@ describe('Calendar', () => {
     expect(screen.getByText('Programmée')).toBeInTheDocument()
   })
 
+  it('place la publication sur son jour à Paris, même après minuit en heure locale', async () => {
+    mockApi({ '/api/calendar': { items: [{ ...entry, scheduled_at: '2026-04-15T22:30:00Z' }], by_day: {}, timezone: 'Europe/Paris' } })
+    renderCalendar()
+    const card = await screen.findByText('TikTok Démo 1')
+    const cell = card.closest('article')!.parentElement!.parentElement!
+    expect(cell.querySelector('p')).toHaveTextContent('16')
+    expect(screen.getByText('00:30')).toBeInTheDocument()
+  })
+
   it('signale une action humaine requise', async () => {
     mockApi({ '/api/calendar': { items: [{ ...entry, requires_user_action: true, status: 'waiting_for_user', status_label: 'Action humaine requise' }], by_day: {} } })
     renderCalendar()
@@ -70,5 +79,21 @@ describe('Calendar', () => {
       expect(call).toBeDefined()
       expect(new Date(String((call?.body as { scheduled_at: string }).scheduled_at)).getUTCHours()).toBe(9)
     })
+  })
+
+  it('préserve l\'heure de Paris quand un déplacement traverse le changement d\'heure', async () => {
+    vi.setSystemTime(new Date('2027-03-10T12:00:00Z'))
+    const { calls } = mockApi({
+      '/api/calendar': { items: [{ ...entry, scheduled_at: '2027-03-27T08:30:00Z' }], by_day: {} },
+      '/api/calendar/targets/t1/move': { post_target_id: 't1' },
+    })
+    renderCalendar()
+    const card = await screen.findByText('TikTok Démo 1')
+    fireEvent.dragStart(card.closest('article')!)
+    const day = screen.getByText('28').parentElement!
+    fireEvent.drop(day)
+    await waitFor(() => expect(calls.find((call) => call.path.includes('/move'))?.body).toEqual({
+      scheduled_at: '2027-03-28T07:30:00.000Z',
+    }))
   })
 })

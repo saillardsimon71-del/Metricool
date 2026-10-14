@@ -37,9 +37,11 @@ export default function Composer() {
   const [activeTab, setActiveTab] = useState<string>('')
   const [when, setWhen] = useState('')
   const [preview, setPreview] = useState(false)
+  const [loadedPostId, setLoadedPostId] = useState<string | null>(null)
 
   const selectedAccounts = useMemo(() => (accounts.data ?? []).filter((account) => selected[account.id]), [accounts.data, selected])
   const platforms = useMemo(() => Array.from(new Set(selectedAccounts.map((account) => account.platform))), [selectedAccounts])
+  const currentTab = selectedAccounts.some((account) => account.id === activeTab) ? activeTab : selectedAccounts[0]?.id
 
   useEffect(() => {
     if (!existing.data) return
@@ -57,10 +59,12 @@ export default function Composer() {
     setVariants(Object.fromEntries(post.targets.map((target) => [target.account_id, target.payload])))
     setActiveTab(post.targets[0]?.account_id ?? '')
     const first = post.targets.find((target) => target.scheduled_at)?.scheduled_at
-    if (first) setWhen(toLocalInput(first))
+    setWhen(toLocalInput(first ?? null))
+    setLoadedPostId(post.id)
   }, [existing.data])
 
   useEffect(() => {
+    if (!accounts.data || (postId && loadedPostId !== postId)) return
     const common = { title, description, hashtags: parseTags(hashtags), language }
     setVariants((current) => {
       const next = { ...current }
@@ -68,7 +72,7 @@ export default function Composer() {
       for (const key of Object.keys(next)) if (!selectedAccounts.some((account) => account.id === key)) delete next[key]
       return next
     })
-  }, [selectedAccounts, title, description, hashtags, language])
+  }, [accounts.data, postId, loadedPostId, selectedAccounts, title, description, hashtags, language])
 
   const regenerate = () => {
     const common = { title, description, hashtags: parseTags(hashtags), language }
@@ -94,8 +98,10 @@ export default function Composer() {
       const post = postId ? await api.patch<Post>(`/api/posts/${postId}`, { ...payload, propagate_metadata: false }) : await api.post<Post>('/api/posts', payload)
       if (mode !== 'draft') {
         if (!when) throw new Error('Choisissez une date et une heure de publication.')
-        const iso = fromLocalInput(when)
-        for (const target of post.targets) await api.post(`/api/posts/targets/${target.id}/schedule`, { scheduled_at: iso })
+        for (const target of post.targets) {
+          const iso = fromLocalInput(when, target.scheduled_at)
+          await api.post(`/api/posts/targets/${target.id}/schedule`, { scheduled_at: iso })
+        }
         if (mode === 'now') {
           const immediate = new Date().toISOString()
           for (const target of post.targets) await api.post(`/api/posts/targets/${target.id}/schedule`, { scheduled_at: immediate })
@@ -207,7 +213,7 @@ export default function Composer() {
               <Field label="Hashtags" hint="Séparés par des espaces, sans # obligatoire">
                 <Input value={hashtags} onChange={(event) => setHashtags(event.target.value)} placeholder="shorts vertical ia" />
               </Field>
-              <Field label="Date et heure (fuseau local)">
+              <Field label="Date et heure (Europe/Paris)">
                 <Input type="datetime-local" value={when} onChange={(event) => setWhen(event.target.value)} />
               </Field>
               <Field label="Notes internes"><Textarea value={notes} onChange={(event) => setNotes(event.target.value)} /></Field>
@@ -227,14 +233,14 @@ export default function Composer() {
                     <button
                       key={account.id}
                       onClick={() => setActiveTab(account.id)}
-                      className={`flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm ${activeTab === account.id || (!activeTab && account.id === selectedAccounts[0].id) ? 'bg-brand-600/20 text-brand-200' : 'text-ink-muted hover:text-ink'}`}
+                      className={`flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm ${currentTab === account.id ? 'bg-brand-600/20 text-brand-200' : 'text-ink-muted hover:text-ink'}`}
                     >
                       <PlatformIcon platform={account.platform} size={14} /> {account.display_name}
                     </button>
                   ))}
                 </div>
                 {selectedAccounts.map((account) => {
-                  const isActive = (activeTab || selectedAccounts[0].id) === account.id
+                  const isActive = currentTab === account.id
                   if (!isActive) return null
                   const payload = variants[account.id] ?? {}
                   const patch = (key: string, value: unknown) => setVariants((current) => ({ ...current, [account.id]: { ...(current[account.id] ?? {}), [key]: value } }))

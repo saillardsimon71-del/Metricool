@@ -118,3 +118,53 @@ test.describe('SocialDock — parcours utilisateur', () => {
     await expect(page.getByText(/jamais une estimation|Aucune donnée disponible/i).first()).toBeVisible({ timeout: 20_000 })
   })
 })
+
+test.describe('Édition multi-comptes en Europe/Paris', () => {
+  test.use({ timezoneId: 'UTC' })
+
+  test('conserve les variantes et programme à Paris depuis un navigateur en UTC', async ({ page, request }) => {
+    const accounts = (await seedAccounts(request)).filter((account) => account.platform === 'tiktok')
+    const created = await request.post('/api/posts', {
+      data: {
+        title: 'Édition multi-comptes E2E', account_ids: accounts.map((account) => account.id),
+        per_platform: { tiktok: {
+          [accounts[0].id]: { caption: 'Original compte 1' },
+          [accounts[1].id]: { caption: 'Original compte 2', disable_comment: true },
+        } },
+      },
+    })
+    expect(created.ok()).toBeTruthy()
+    const post = await created.json()
+    for (const target of post.targets) {
+      const scheduled = await request.post(`/api/posts/targets/${target.id}/schedule`, {
+        data: { scheduled_at: '2027-07-01T07:00:00Z' },
+      })
+      expect(scheduled.ok()).toBeTruthy()
+    }
+
+    await page.goto(`/posts/${post.id}`)
+    await expect(page.getByLabel(/Légende/)).toHaveValue('Original compte 1')
+    await expect(page.getByLabel(/Date et heure/)).toHaveValue('2027-07-01T09:00')
+    await page.getByLabel(/Légende/).fill('Compte 1 modifié')
+    await page.getByRole('button', { name: accounts[1].display_name }).click()
+    await expect(page.getByLabel(/Légende/)).toHaveValue('Original compte 2')
+    await expect(page.getByLabel('Commentaires désactivés')).toBeChecked()
+    await page.getByLabel(/Date et heure/).fill('2027-07-02T09:30')
+    await page.getByRole('button', { name: 'Programmer', exact: true }).click()
+    await expect(page).toHaveURL(/\/posts$/)
+
+    const saved = await (await request.get(`/api/posts/${post.id}`)).json()
+    expect(saved.targets).toHaveLength(2)
+    const first = saved.targets.find((target: { account_id: string }) => target.account_id === accounts[0].id)
+    const second = saved.targets.find((target: { account_id: string }) => target.account_id === accounts[1].id)
+    expect(first.payload.caption).toBe('Compte 1 modifié')
+    expect(second.payload.caption).toBe('Original compte 2')
+    expect(second.payload.disable_comment).toBe(true)
+    for (const target of saved.targets) {
+      expect(target.status).toBe('scheduled')
+      expect(new Date(target.scheduled_at).toISOString()).toBe('2027-07-02T07:30:00.000Z')
+    }
+    await page.goto(`/posts/${post.id}`)
+    await expect(page.getByLabel(/Légende/)).toHaveValue('Compte 1 modifié')
+  })
+})

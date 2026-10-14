@@ -197,6 +197,7 @@ describe('Composer', () => {
       const caption2 = screen.getByLabelText(/Légende \(2200 caractères max\)/)
       // Vérifie que les deux comptes ont été mis à jour
       expect(caption).toHaveValueContaining('modifié')
+      expect(caption2).toHaveValueContaining('modifié')
     })
     // Sauvegarder devrait mettre à jour les deux cibles
     fireEvent.click(screen.getByRole('button', { name: /Programmer/ }))

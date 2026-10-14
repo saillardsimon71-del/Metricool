@@ -367,6 +367,29 @@ def dashboard_summary(session: Session) -> dict[str, Any]:
     }
 
 
+def _normalize_per_platform(
+    per_platform: dict[str, dict[str, Any]] | None,
+    account_ids: Sequence[str],
+) -> dict[str, dict[str, dict[str, Any]]] | None:
+    """Normalize per_platform from old format {platform: payload} to new format {platform: {account_id: payload}}.
+
+    If per_platform is already in new format, it's returned as-is (account IDs preserved).
+    If in old format, payload is assigned to all specified accounts.
+    """
+    if per_platform is None:
+        return None
+    # Check if already in new format (has nested dict per platform)
+    result: dict[str, dict[str, dict[str, Any]]] = {}
+    for platform, payload in per_platform.items():
+        if isinstance(payload, dict) and any(isinstance(v, dict) for v in payload.values()):
+            # Already new format
+            result[platform] = payload
+        else:
+            # Old format: payload is a single dict, assign to all accounts
+            result[platform] = {account_id: payload for account_id in account_ids}
+    return result
+
+
 def batch_schedule(
     session: Session,
     *,
@@ -375,7 +398,7 @@ def batch_schedule(
     days: Sequence[date],
     times: Sequence[dtime],
     template_id: str | None = None,
-    per_platform: dict[str, dict[str, Any]] | None = None,
+    per_platform: dict[str, dict[str, dict[str, Any]]] | None = None,
     title_prefix: str = "",
     stagger_minutes: int = 0,
 ) -> dict[str, Any]:
@@ -387,6 +410,8 @@ def batch_schedule(
     """
     if not media_ids or not account_ids or not days or not times:
         raise PostError("Sélection incomplète : médias, comptes, jours et horaires sont requis.")
+    # Normalize per_platform to new format
+    per_platform = _normalize_per_platform(per_platform or {}, account_ids)
     slots: list[datetime] = []
     for day in days:
         for hour in times:

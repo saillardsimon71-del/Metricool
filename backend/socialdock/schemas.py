@@ -216,7 +216,10 @@ class BatchScheduleRequest(BaseModel):
     days: list[date] = Field(min_length=1)
     times: list[dtime] = Field(min_length=1)
     template_id: str | None = None
-    per_platform: dict[str, dict[str, Any]] = Field(default_factory=dict)
+    per_platform: dict[str, dict[str, dict[str, Any]]] = Field(
+        default_factory=dict,
+        description="Plateforme -> compte ID -> payload. Ex: {youtube: {acct1: {title:..., ...}}}",
+    )
     title_prefix: str = ""
     stagger_minutes: int = Field(default=0, ge=0, le=240)
 

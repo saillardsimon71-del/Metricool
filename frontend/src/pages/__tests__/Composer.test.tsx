@@ -147,7 +147,7 @@ describe('Composer', () => {
     await user.click(screen.getByLabelText(/tiktok 1/i))
     await user.click(screen.getByLabelText(/tiktok 2/i))
     // activeTab devrait être initialisé avec le premier account_id, pas le target id
-    const buttons = await screen.findAllByRole('button', { selector: 'button' })
+    const buttons = await screen.findAllByRole('button')
     // Find the button with class bg-brand-600/20 (active)
     const activeButton = buttons.find((b) => b.getAttribute('class')?.includes('bg-brand-600/20'))
     expect(activeButton).toBeInTheDocument()
@@ -188,16 +188,16 @@ describe('Composer', () => {
     await user.type(screen.getByPlaceholderText('Ma vidéo 9:16'), 'Modifié')
     await user.type(screen.getByPlaceholderText('shorts vertical ia'), 'modifié')
     // La variante TikTok 1 devrait avoir la nouvelle description
+    let caption: null | HTMLTextAreaElement = null
     await waitFor(() => {
-      const caption = screen.getByLabelText(/Légende \(2200 caractères max\)/)
-      expect(caption).toHaveValueContaining('modifié')
+      caption = screen.getByLabelText(/Légende \(2200 caractères max\)/ as HTMLTextAreaElement
+      expect(caption?.value).toContain('modifié')
     })
     // La variante TikTok 2 devrait aussi avoir la nouvelle description (via le commun)
+    let caption2: null | HTMLTextAreaElement = null
     await waitFor(() => {
-      const caption2 = screen.getByLabelText(/Légende \(2200 caractères max\)/)
-      // Vérifie que les deux comptes ont été mis à jour
-      expect(caption).toHaveValueContaining('modifié')
-      expect(caption2).toHaveValueContaining('modifié')
+      caption2 = screen.getByLabelText(/Légende \(2200 caractères max\)/ as HTMLTextAreaElement
+      expect(caption2?.value).toContain('modifié')
     })
     // Sauvegarder devrait mettre à jour les deux cibles
     fireEvent.click(screen.getByRole('button', { name: /Programmer/ }))

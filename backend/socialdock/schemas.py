@@ -8,6 +8,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from .models import as_utc
+
 
 class ORMModel(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -149,6 +151,11 @@ class PostTargetOut(ORMModel):
     created_at: datetime
     updated_at: datetime
 
+    @field_validator("scheduled_at")
+    @classmethod
+    def _scheduled_at_utc(cls, value: datetime | None) -> datetime | None:
+        return as_utc(value)
+
 
 class PostOut(ORMModel):
     id: str
@@ -178,9 +185,9 @@ class PostCreate(BaseModel):
     language: str = "fr"
     internal_notes: str | None = None
     account_ids: list[str] = Field(default_factory=list)
-    per_platform: dict[str, dict[str, dict[str, Any]]] = Field(
+    per_platform: dict[str, dict[str, Any]] = Field(
         default_factory=dict,
-        description="Plateforme -> compte ID -> payload. Ex: {youtube: {acct1: {title:..., ...}, acct2: {title:..., ...}}}",
+        description="Plateforme -> compte ID -> payload, ou ancien format plateforme -> payload.",
     )
 
 
@@ -195,7 +202,7 @@ class PostPatch(BaseModel):
     language: str | None = None
     internal_notes: str | None = None
     account_ids: list[str] | None = None
-    per_platform: dict[str, dict[str, dict[str, Any]]] | None = None
+    per_platform: dict[str, dict[str, Any]] | None = None
     propagate_metadata: bool = False
 
 
@@ -216,9 +223,9 @@ class BatchScheduleRequest(BaseModel):
     days: list[date] = Field(min_length=1)
     times: list[dtime] = Field(min_length=1)
     template_id: str | None = None
-    per_platform: dict[str, dict[str, dict[str, Any]]] = Field(
+    per_platform: dict[str, dict[str, Any]] = Field(
         default_factory=dict,
-        description="Plateforme -> compte ID -> payload. Ex: {youtube: {acct1: {title:..., ...}}}",
+        description="Plateforme -> compte ID -> payload, ou ancien format plateforme -> payload.",
     )
     title_prefix: str = ""
     stagger_minutes: int = Field(default=0, ge=0, le=240)

@@ -2,11 +2,25 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import Any
 
 from sqlalchemy.orm import Session
 
 from ..models import Post, PostStatus, PostTarget, PostTemplate
+
+
+def normalize_per_platform(
+    per_platform: dict[str, dict[str, Any]] | None,
+    account_ids: Sequence[str],
+) -> dict[str, dict[str, dict[str, Any]]]:
+    result = {}
+    for platform, payload in (per_platform or {}).items():
+        if payload and all(isinstance(value, dict) for value in payload.values()):
+            result[platform] = payload
+        else:
+            result[platform] = {account_id: payload for account_id in account_ids}
+    return result
 
 
 def default_payload(platform: str, post: Post, *, hashtags: list[str] | None = None) -> dict[str, Any]:
@@ -67,11 +81,11 @@ def apply_template(session: Session, post: Post, template_id: str) -> Post:
     post.description = payload.get("description") or post.description
     post.language = payload.get("language") or post.language
     post.template_id = template.id
-    per_platform = payload.get("per_platform") or {}
+    per_platform = normalize_per_platform(payload.get("per_platform"), [t.account_id for t in post.targets])
     for target in post.targets:
         platform = target.account.platform if target.account else "demo"
         base = default_payload(platform, post, hashtags=post.hashtags)
-        base.update(per_platform.get(platform) or {})
+        base.update(per_platform.get(platform, {}).get(target.account_id, {}))
         target.payload = base
     session.flush()
     return post

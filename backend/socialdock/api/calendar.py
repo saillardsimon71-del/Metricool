@@ -5,11 +5,12 @@ from __future__ import annotations
 from datetime import UTC, date, datetime
 from datetime import time as dtime
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
-from ..models import PostTarget
+from ..models import PostTarget, as_utc
 from ..schemas import ScheduleRequest
 from ..services import posts as post_service
 from ..services.posts import PostError
@@ -31,8 +32,9 @@ def calendar_range(
 ) -> dict[str, Any]:
     if (end - start).days > 400:
         raise HTTPException(status_code=400, detail="Plage trop large (400 jours maximum).")
-    start_dt = datetime.combine(start, dtime.min, tzinfo=UTC)
-    end_dt = datetime.combine(end, dtime.max, tzinfo=UTC)
+    paris = ZoneInfo(DEFAULT_TZ)
+    start_dt = datetime.combine(start, dtime.min, tzinfo=paris).astimezone(UTC)
+    end_dt = datetime.combine(end, dtime.max, tzinfo=paris).astimezone(UTC)
     targets, total = post_service.list_targets(
         session, start=start_dt, end=end_dt, account_ids=account_id, status=status, limit=2000
     )
@@ -43,7 +45,7 @@ def calendar_range(
             continue
         entry = _entry(target)
         items.append(entry)
-        by_day.setdefault(target.scheduled_at.date().isoformat(), []).append(entry)
+        by_day.setdefault(as_utc(target.scheduled_at).astimezone(paris).date().isoformat(), []).append(entry)
     return {
         "timezone": DEFAULT_TZ,
         "start": start.isoformat(),
@@ -71,7 +73,7 @@ def move_target(target_id: str, payload: ScheduleRequest, session: Session = Dep
     except PostError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     session.commit()
-    return {"post_target_id": target.id, "scheduled_at": target.scheduled_at.isoformat(), "status": target.status}
+    return {"post_target_id": target.id, "scheduled_at": as_utc(target.scheduled_at).isoformat(), "status": target.status}
 
 
 def _entry(target: PostTarget) -> dict[str, Any]:
@@ -92,8 +94,8 @@ def _entry(target: PostTarget) -> dict[str, Any]:
         "mode": account.mode if account else None,
         "status": target.status,
         "status_label": describe_status(target.status),
-        "scheduled_at": target.scheduled_at.isoformat() if target.scheduled_at else None,
-        "published_at": target.published_at.isoformat() if target.published_at else None,
+        "scheduled_at": as_utc(target.scheduled_at).isoformat() if target.scheduled_at else None,
+        "published_at": as_utc(target.published_at).isoformat() if target.published_at else None,
         "thumbnail": thumbnail,
         "remote_url": target.remote_url,
         "requires_user_action": target.requires_user_action,

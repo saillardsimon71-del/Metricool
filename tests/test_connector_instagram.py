@@ -152,7 +152,7 @@ def test_quota_de_publication_lu():
     assert quota == {"quota_total": 100, "quota_usage": 7, "quota_duration": 86400}
 
 
-def test_statistiques_media_mappees():
+def test_statistiques_media_mappees(tmp_path: Path):
     def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(200, json={"data": [
             {"name": "views", "values": [{"value": 3200}]},
@@ -161,7 +161,7 @@ def test_statistiques_media_mappees():
         ]})
 
     connector = build(handler)
-    ctx = context(Path("/tmp"))
+    ctx = context(tmp_path)
     ctx.target.remote_id = "MEDIA9"
     analytics = connector.get_analytics(ctx)
     assert analytics["metrics"] == {"views": 3200, "likes": 180, "reach": 2900}

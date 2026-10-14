@@ -7,6 +7,7 @@ from collections.abc import Iterable, Sequence
 from datetime import UTC, date, datetime, timedelta
 from datetime import time as dtime
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -22,7 +23,7 @@ from ..models import (
     utcnow,
 )
 from .states import can_transition, describe_status, set_status
-from .templates import build_payload_for, create_targets_for_accounts, default_payload
+from .templates import build_payload_for, create_targets_for_accounts, default_payload, normalize_per_platform
 
 log = logging.getLogger(__name__)
 
@@ -54,7 +55,7 @@ def create_post(
     language: str = "fr",
     internal_notes: str | None = None,
     account_ids: Sequence[str] | None = None,
-    per_platform: dict[str, dict[str, dict[str, Any]]] | None = None,
+    per_platform: dict[str, dict[str, Any]] | None = None,
     scheduled_at: Sequence[tuple[str, datetime | str | None]] | None = None,
 ) -> Post:
     post = Post(
@@ -73,6 +74,7 @@ def create_post(
     if account_ids:
         create_targets_for_accounts(session, post, list(account_ids))
     if per_platform:
+        per_platform = normalize_per_platform(per_platform, [t.account_id for t in post.targets])
         for target in post.targets:
             platform = target.account.platform if target.account else "demo"
             account_per_platform = per_platform.get(platform, {}) or {}
@@ -100,7 +102,7 @@ def update_post(
     language: str | None = None,
     internal_notes: str | None = None,
     account_ids: Sequence[str] | None = None,
-    per_platform: dict[str, dict[str, dict[str, Any]]] | None = None,
+    per_platform: dict[str, dict[str, Any]] | None = None,
     propagate_metadata: bool = False,
 ) -> Post:
     post = session.get(Post, post_id)
@@ -134,11 +136,12 @@ def update_post(
                     raise PostError(
                         f"Impossible de retirer {target.account.display_name} : la publication est déjà effective."
                     )
-                session.delete(target)
+                post.targets.remove(target)
         session.flush()
         create_targets_for_accounts(session, post, sorted(wanted - {t.account_id for t in post.targets}))
 
     if per_platform:
+        per_platform = normalize_per_platform(per_platform, [t.account_id for t in post.targets])
         for target in post.targets:
             platform = target.account.platform if target.account else "demo"
             account_per_platform = per_platform.get(platform, {}) or {}
@@ -367,29 +370,6 @@ def dashboard_summary(session: Session) -> dict[str, Any]:
     }
 
 
-def _normalize_per_platform(
-    per_platform: dict[str, dict[str, Any]] | None,
-    account_ids: Sequence[str],
-) -> dict[str, dict[str, dict[str, Any]]] | None:
-    """Normalize per_platform from old format {platform: payload} to new format {platform: {account_id: payload}}.
-
-    If per_platform is already in new format, it's returned as-is (account IDs preserved).
-    If in old format, payload is assigned to all specified accounts.
-    """
-    if per_platform is None:
-        return None
-    # Check if already in new format (has nested dict per platform)
-    result: dict[str, dict[str, dict[str, Any]]] = {}
-    for platform, payload in per_platform.items():
-        if isinstance(payload, dict) and any(isinstance(v, dict) for v in payload.values()):
-            # Already new format
-            result[platform] = payload
-        else:
-            # Old format: payload is a single dict, assign to all accounts
-            result[platform] = {account_id: payload for account_id in account_ids}
-    return result
-
-
 def batch_schedule(
     session: Session,
     *,
@@ -398,7 +378,7 @@ def batch_schedule(
     days: Sequence[date],
     times: Sequence[dtime],
     template_id: str | None = None,
-    per_platform: dict[str, dict[str, dict[str, Any]]] | None = None,
+    per_platform: dict[str, dict[str, Any]] | None = None,
     title_prefix: str = "",
     stagger_minutes: int = 0,
 ) -> dict[str, Any]:
@@ -410,12 +390,15 @@ def batch_schedule(
     """
     if not media_ids or not account_ids or not days or not times:
         raise PostError("Sélection incomplète : médias, comptes, jours et horaires sont requis.")
-    # Normalize per_platform to new format
-    per_platform = _normalize_per_platform(per_platform or {}, account_ids)
     slots: list[datetime] = []
+    paris = ZoneInfo("Europe/Paris")
     for day in days:
         for hour in times:
-            slots.append(datetime.combine(day, hour, tzinfo=UTC))
+            local = datetime.combine(day, hour, tzinfo=paris)
+            moment = local.astimezone(UTC)
+            if moment.astimezone(paris).replace(tzinfo=None) != local.replace(tzinfo=None):
+                raise PostError("Cette heure n'existe pas dans le fuseau Europe/Paris.")
+            slots.append(moment)
     if stagger_minutes:
         adjusted: list[datetime] = []
         for index, slot in enumerate(slots):
@@ -434,12 +417,13 @@ def batch_schedule(
             description="",
             media_asset_id=asset.id,
             account_ids=list(account_ids),
-            per_platform=per_platform,
         )
         if template_id:
             from .templates import apply_template
 
             apply_template(session, post, template_id)
+        if per_platform:
+            update_post(session, post.id, per_platform=per_platform)
         for offset, target in enumerate(post.targets):
             schedule_target(session, target, when + timedelta(minutes=stagger_minutes * offset))
         created.append(

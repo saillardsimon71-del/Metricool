@@ -61,11 +61,10 @@ def cmd_run(args: argparse.Namespace) -> int:
     _migrate(settings)
     _write_pid(settings)
 
-    if args.browser:
-        threading.Timer(1.5, lambda: webbrowser.open(f"http://{args.host}:{args.port}/")).start()
-
     host = args.host or settings.host
     port = args.port or settings.port
+    if args.browser:
+        threading.Timer(1.5, lambda: webbrowser.open(f"http://{host}:{port}/")).start()
     print(f"SocialDock {__version__} — http://{host}:{port}")
     print(f"Données : {settings.data_dir}")
     print("Arrêt : Ctrl+C, ou « python -m socialdock stop » dans une autre fenêtre.")

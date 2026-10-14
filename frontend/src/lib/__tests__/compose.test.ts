@@ -47,10 +47,17 @@ describe('buildVariant', () => {
 })
 
 describe('groupVariantsByPlatform', () => {
-  it('regroupe par plateforme pour l’envoi à l’API', () => {
+  it('regroupe par plateforme pour l’envoi à l\'API', () => {
     const accounts = [account('a1', 'tiktok'), account('a2', 'tiktok'), account('i1', 'instagram')]
     const variants = { a1: { caption: 'un' }, a2: { caption: 'deux' }, i1: { caption: 'ig' } }
-    expect(groupVariantsByPlatform(accounts, variants)).toEqual({ tiktok: { caption: 'deux' }, instagram: { caption: 'ig' } })
+    expect(groupVariantsByPlatform(accounts, variants)).toEqual({ tiktok: { a1: { caption: 'un' }, a2: { caption: 'deux' } }, instagram: { i1: { caption: 'ig' } } })
+  })
+
+  it('maintient les variantes indépendantes par compte m%C3%Aame plateforme', () => {
+    const accounts = [account('tiktok-1', 'tiktok'), account('tiktok-2', 'tiktok')]
+    const variants = { 'tiktok-1': { description: 'Description du compte 1' }, 'tiktok-2': { description: 'Description du compte 2' } }
+    const result = groupVariantsByPlatform(accounts, variants)
+    expect(result).toEqual({ tiktok: { 'tiktok-1': { description: 'Description du compte 1' }, 'tiktok-2': { description: 'Description du compte 2' } } })
   })
 })
 

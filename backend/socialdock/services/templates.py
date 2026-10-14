@@ -83,7 +83,7 @@ def build_payload_for(platform: str, post: Post, overrides: dict[str, Any] | Non
     return payload
 
 
-def create_targets_for_accounts(session: Session, post: Post, account_ids: list[str], *, scheduled_at=None) -> list[PostTarget]:
+def create_targets_for_accounts(session: Session, post: Post, account_ids: list[str], *, per_platform: dict[str, dict[str, dict[str, Any]]] | None = None, scheduled_at=None) -> list[PostTarget]:
     """Ajoute une cible par compte, avec sa variante de métadonnées."""
     from ..models import Account
 
@@ -95,11 +95,17 @@ def create_targets_for_accounts(session: Session, post: Post, account_ids: list[
         account = session.get(Account, account_id)
         if account is None:
             continue
+        # Récupère le payload spécifique à ce compte dans per_platform
+        payload = default_payload(account.platform, post)
+        if per_platform:
+            platform = account.platform
+            account_payloads = per_platform.get(platform, {}) or {}
+            payload = {**payload, **account_payloads.get(account_id, {})}
         target = PostTarget(
             account_id=account.id,
             status=PostStatus.DRAFT.value,
             scheduled_at=scheduled_at,
-            payload=default_payload(account.platform, post),
+            payload=payload,
         )
         # Ajout via la relation : la collection ``post.targets`` reste synchronisée
         # sans requête supplémentaire (sinon l'API renverrait une liste vide).
@@ -112,10 +118,12 @@ def create_targets_for_accounts(session: Session, post: Post, account_ids: list[
 
 def template_from_post(session: Session, post: Post, name: str, description: str | None = None) -> PostTemplate:
     """Enregistre la configuration d'une publication comme modèle réutilisable."""
-    per_platform: dict[str, Any] = {}
+    per_platform: dict[str, dict[str, dict[str, Any]]] = {}
     for target in post.targets:
         platform = target.account.platform if target.account else "demo"
-        per_platform[platform] = dict(target.payload or {})
+        if platform not in per_platform:
+            per_platform[platform] = {}
+        per_platform[platform][target.account.id] = dict(target.payload or {})
     template = PostTemplate(
         name=name,
         description=description,

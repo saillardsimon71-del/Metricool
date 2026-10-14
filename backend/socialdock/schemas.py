@@ -178,7 +178,10 @@ class PostCreate(BaseModel):
     language: str = "fr"
     internal_notes: str | None = None
     account_ids: list[str] = Field(default_factory=list)
-    per_platform: dict[str, dict[str, Any]] = Field(default_factory=dict)
+    per_platform: dict[str, dict[str, dict[str, Any]]] = Field(
+        default_factory=dict,
+        description="Plateforme -> compte ID -> payload. Ex: {youtube: {acct1: {title:..., ...}, acct2: {title:..., ...}}}",
+    )
 
 
 class PostPatch(BaseModel):
@@ -192,7 +195,7 @@ class PostPatch(BaseModel):
     language: str | None = None
     internal_notes: str | None = None
     account_ids: list[str] | None = None
-    per_platform: dict[str, dict[str, Any]] | None = None
+    per_platform: dict[str, dict[str, dict[str, Any]]] | None = None
     propagate_metadata: bool = False
 
 

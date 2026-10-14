@@ -54,7 +54,7 @@ def create_post(
     language: str = "fr",
     internal_notes: str | None = None,
     account_ids: Sequence[str] | None = None,
-    per_platform: dict[str, dict[str, Any]] | None = None,
+    per_platform: dict[str, dict[str, dict[str, Any]]] | None = None,
     scheduled_at: Sequence[tuple[str, datetime | str | None]] | None = None,
 ) -> Post:
     post = Post(
@@ -75,7 +75,8 @@ def create_post(
     if per_platform:
         for target in post.targets:
             platform = target.account.platform if target.account else "demo"
-            target.payload = build_payload_for(platform, post, per_platform.get(platform))
+            account_per_platform = per_platform.get(platform, {}) or {}
+            target.payload = build_payload_for(platform, post, account_per_platform.get(target.account.id))
     if scheduled_at:
         for target_id, when in scheduled_at:
             target = next((t for t in post.targets if t.id == target_id), None)
@@ -99,7 +100,7 @@ def update_post(
     language: str | None = None,
     internal_notes: str | None = None,
     account_ids: Sequence[str] | None = None,
-    per_platform: dict[str, dict[str, Any]] | None = None,
+    per_platform: dict[str, dict[str, dict[str, Any]]] | None = None,
     propagate_metadata: bool = False,
 ) -> Post:
     post = session.get(Post, post_id)
@@ -140,7 +141,8 @@ def update_post(
     if per_platform:
         for target in post.targets:
             platform = target.account.platform if target.account else "demo"
-            overrides = per_platform.get(platform)
+            account_per_platform = per_platform.get(platform, {}) or {}
+            overrides = account_per_platform.get(target.account.id)
             if overrides is None:
                 continue
             target.payload = {**(target.payload or {}), **{k: v for k, v in overrides.items() if v is not None}}
@@ -186,13 +188,18 @@ def duplicate_post(session: Session, post_id: str, *, account_ids: Sequence[str]
         internal_notes=source.internal_notes,
         account_ids=account_ids or [t.account_id for t in source.targets],
     )
-    per_platform = {
-        (t.account.platform if t.account else "demo"): dict(t.payload or {}) for t in source.targets
-    }
+    # Per-account per-platform payloads to preserve each account's variant
+    per_platform: dict[str, dict[str, dict[str, Any]]] = {}
+    for target in source.targets:
+        platform = target.account.platform if target.account else "demo"
+        if platform not in per_platform:
+            per_platform[platform] = {}
+        per_platform[platform][target.account.id] = dict(target.payload or {})
     for target in copy.targets:
         platform = target.account.platform if target.account else "demo"
-        if platform in per_platform:
-            target.payload = per_platform[platform]
+        account_payload = per_platform.get(platform, {}).get(target.account.id)
+        if account_payload is not None:
+            target.payload = account_payload
     session.flush()
     return copy
 

@@ -115,3 +115,95 @@ describe('Composer', () => {
     expect(option.disabled).toBe(true)
   })
 })
+
+  it('initialise activeTab avec account_id au lieu du target id', async () => {
+    // Post with targets having account_id (not target id)
+    mockApi({
+      '/api/accounts': accounts,
+      '/api/media': { items: media, total: 1 },
+      '/api/posts': {
+        id: 'post-1',
+        title: 'Ma vidéo',
+        description: '',
+        hashtags: [],
+        media_asset_id: 'media-1',
+        thumbnail_media_id: null,
+        series_id: null,
+        episode_number: null,
+        language: 'fr',
+        internal_notes: null,
+        template_id: null,
+        created_at: '2026-01-01T10:00:00Z',
+        updated_at: '2026-01-01T10:00:00Z',
+        targets: [
+          { id: 'target-1', account_id: 'tiktok-1', payload: { caption: 'old' } },
+          { id: 'target-2', account_id: 'tiktok-2', payload: { caption: 'old' } },
+        ],
+      },
+    })
+    const user = userEvent.setup()
+    renderComposer()
+    await screen.findByText('tiktok 1')
+    await user.click(screen.getByLabelText(/tiktok 1/i))
+    await user.click(screen.getByLabelText(/tiktok 2/i))
+    // activeTab devrait être initialisé avec le premier account_id, pas le target id
+    const buttons = await screen.findAllByRole('button', { selector: 'button' })
+    // Find the button with class bg-brand-600/20 (active)
+    const activeButton = buttons.find((b) => b.getAttribute('class')?.includes('bg-brand-600/20'))
+    expect(activeButton).toBeInTheDocument()
+    // Le bouton actif devrait contenir le nom du premier compte sélectionné
+    expect(activeButton).toHaveTextContent('tiktok 1')
+  })
+
+  it('modifie une publication multi-comptes existante en conservant les variantes par compte', async () => {
+    mockApi({
+      '/api/accounts': accounts,
+      '/api/media': { items: media, total: 1 },
+      '/api/posts': {
+        id: 'post-1',
+        title: 'Ma vidéo',
+        description: '',
+        hashtags: [],
+        media_asset_id: 'media-1',
+        thumbnail_media_id: null,
+        series_id: null,
+        episode_number: null,
+        language: 'fr',
+        internal_notes: null,
+        template_id: null,
+        created_at: '2026-01-01T10:00:00Z',
+        updated_at: '2026-01-01T10:00:00Z',
+        targets: [
+          { id: 'target-1', account_id: 'tiktok-1', payload: { description: 'Original TikTok 1' } },
+          { id: 'target-2', account_id: 'tiktok-2', payload: { description: 'Original TikTok 2' } },
+        ],
+      },
+    })
+    const user = userEvent.setup()
+    renderComposer()
+    await screen.findByText('tiktok 1')
+    await user.click(screen.getByLabelText(/tiktok 1/i))
+    await user.click(screen.getByLabelText(/tiktok 2/i))
+    // Modifier la description commune
+    await user.type(screen.getByPlaceholderText('Ma vidéo 9:16'), 'Modifié')
+    await user.type(screen.getByPlaceholderText('shorts vertical ia'), 'modifié')
+    // La variante TikTok 1 devrait avoir la nouvelle description
+    await waitFor(() => {
+      const caption = screen.getByLabelText(/Légende \(2200 caractères max\)/)
+      expect(caption).toHaveValueContaining('modifié')
+    })
+    // La variante TikTok 2 devrait aussi avoir la nouvelle description (via le commun)
+    await waitFor(() => {
+      const caption2 = screen.getByLabelText(/Légende \(2200 caractères max\)/)
+      // Vérifie que les deux comptes ont été mis à jour
+      expect(caption).toHaveValueContaining('modifié')
+    })
+    // Sauvegarder devrait mettre à jour les deux cibles
+    fireEvent.click(screen.getByRole('button', { name: /Programmer/ }))
+    await waitFor(() => expect(screen.findByText(/Choisissez une date et une heure/)))
+    // Vérifier que les deux comptes ont bien été mis à jour
+    await waitFor(() => {
+      const post = screen.getByText(/Publication programmée/)
+      expect(post).toBeInTheDocument()
+    })
+  })

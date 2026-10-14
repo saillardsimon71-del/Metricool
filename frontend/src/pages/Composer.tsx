@@ -55,7 +55,7 @@ export default function Composer() {
     setThumbnailId(post.thumbnail_media_id ?? '')
     setSelected(Object.fromEntries(post.targets.map((target) => [target.account_id, true])))
     setVariants(Object.fromEntries(post.targets.map((target) => [target.account_id, target.payload])))
-    setActiveTab(post.targets[0]?.id ?? '')
+    setActiveTab(post.targets[0]?.account_id ?? '')
     const first = post.targets.find((target) => target.scheduled_at)?.scheduled_at
     if (first) setWhen(toLocalInput(first))
   }, [existing.data])

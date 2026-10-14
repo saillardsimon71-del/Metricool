@@ -52,9 +52,13 @@ export const buildVariant = (platform: string, common: CommonMetadata): Record<s
   return { caption: `${common.description} ${tags}`.trim().slice(0, 4000) }
 }
 
-export const groupVariantsByPlatform = (accounts: Account[], variants: Record<string, Record<string, unknown>>): Record<string, Record<string, unknown>> => {
-  const grouped: Record<string, Record<string, unknown>> = {}
-  for (const account of accounts) grouped[account.platform] = variants[account.id] ?? {}
+export const groupVariantsByPlatform = (accounts: Account[], variants: Record<string, Record<string, unknown>>): Record<string, Record<string, Record<string, unknown>>> => {
+  const grouped: Record<string, Record<string, Record<string, unknown>>> = {}
+  for (const account of accounts) {
+    const platform = account.platform
+    if (!grouped[platform]) grouped[platform] = {}
+    grouped[platform][account.id] = variants[account.id] ?? {}
+  }
   return grouped
 }
 
